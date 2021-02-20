@@ -3,7 +3,7 @@ import json
 import matplotlib
 from jinja2 import Template, Environment, FileSystemLoader
 
-from niimasker.plots import (plot_region_overlay, plot_coord_overlay, 
+from nixtract.plots import (plot_region_overlay, plot_coord_overlay, 
                              plot_timeseries, plot_connectome, 
                              plot_regressor_corr)
 
@@ -52,7 +52,7 @@ def generate_report(func_image, output_dir):
                                                    fig_fname_base, 
                                                    cmap=roi_cmap)
 
-    param_file = os.path.join(output_dir, 'niimasker_data/parameters.json')
+    param_file = os.path.join(output_dir, 'nixtract_data/parameters.json')
     with open(param_file, 'r') as f:
         parameters = json.load(f)
 

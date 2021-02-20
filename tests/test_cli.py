@@ -1,5 +1,5 @@
 
-from niimasker import cli
+from nixtract import cli
 
 
 def test_empty_to_none():

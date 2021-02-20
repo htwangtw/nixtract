@@ -1,4 +1,4 @@
-# nii-masker
+# nixtract
 
 <p align="center">
   <img src="resources/logo.png" alt="logo" width="500"/>
@@ -18,7 +18,7 @@ Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, 
 
 ## Installation
 
-`niimasker` requires the following dependencies:
+`nixtract` requires the following dependencies:
 
 - numpy
 - pandas
@@ -27,13 +27,13 @@ Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, 
 - natsort
 - jinja2
 
-First, download this repository to a directory. Then, navigate to the directory, `nii-masker/`, and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
+First, download this repository to a directory. Then, navigate to the directory, `nixtract/`, and run `pip install .` to install `nixtract`. To check your installation, run `nixtract -h` and you should see the help information.
 
-## Using `niimasker`
-`niimasker` is run via the command-line and can take the following arguments:
+## Using `nixtract`
+`nixtract` is run via the command-line and can take the following arguments:
 
 ```
-usage: niimasker [-h] [-i input_files [input_files ...]] [-r roi_file]
+usage: nixtract [-h] [-i input_files [input_files ...]] [-r roi_file]
                  [-m mask_img] [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
                  [--regressors regressors [regressors ...]]
@@ -166,7 +166,7 @@ All other arguments are optional.
 Say you want to extract the signals from two regions in an image (`img1.nii.gz`). Region masks are stored in `atlas.nii.gz`, and have the names "region1" and "region2". With this data, you want to regress out some confounds (e.g., motion realignent parameters, white matter signal, etc. stored in `confounds_for_img1.tsv`), detrend, high-pass filter, and finally standardize your data. The command to accomplish this is:
 
 ```bash
-niimasker output/ -i img1.nii.gz -r atlas.nii.gz --labels region1 region2 \
+nixtract output/ -i img1.nii.gz -r atlas.nii.gz --labels region1 region2 \
 --regressor_files confounds_for_img1.tsv --t_r 2 \
 --high_pass 0.01 --detrend --standardize
 ```
@@ -185,7 +185,7 @@ To keep track over everything, a visual report is generated which shows the extr
 
 ## The configuration JSON file
 
-Instead of passing all of the parameters through the command-line, `niimasker` also provides support for a simple configuration JSON file. The only parameter that needs to be passed into the command-line is the output directory (`output_dir`). All other parameters can either be set by the configuration file or by the command-line. **Note that the configuration file overwrites any of the command-line parameters**. An empty configuration file template of all of the parameters is provided in `config_template.json`, which is shown below:
+Instead of passing all of the parameters through the command-line, `nixtract` also provides support for a simple configuration JSON file. The only parameter that needs to be passed into the command-line is the output directory (`output_dir`). All other parameters can either be set by the configuration file or by the command-line. **Note that the configuration file overwrites any of the command-line parameters**. An empty configuration file template of all of the parameters is provided in `config_template.json`, which is shown below:
 
 ```JSON
 {
@@ -211,7 +211,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
 
 All parameter defaults are shown above. Not all parameters need to be included in the configuration file; only the ones you wish to use. An example use-case that combines both the command-line parameters and configuration file:
 
-`niimasker output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
+`nixtract output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
 
 Where `config.json` is:
 
@@ -238,7 +238,7 @@ The `roi_file` parameter (`-r` or `--roi_file`) can be a NIfTI image that is eit
 
 ### Working with single ROI masks
 
-`niimasker` lets you work with a binary mask such that non-zero values represent a single region of interest mask. Here, you can pass `--as_voxels` in the CLI or set `"as_voxels: true"` in your configuration file if you wish to extract the timeseries of every voxel within the region (otherwise the mean timeseries is extracted). This is useful for analyses such as ROI analysis or performing multivariate pattern analyses. A minimal example `config.json`:
+`nixtract` lets you work with a binary mask such that non-zero values represent a single region of interest mask. Here, you can pass `--as_voxels` in the CLI or set `"as_voxels: true"` in your configuration file if you wish to extract the timeseries of every voxel within the region (otherwise the mean timeseries is extracted). This is useful for analyses such as ROI analysis or performing multivariate pattern analyses. A minimal example `config.json`:
 
 ```JSON
 {
@@ -254,9 +254,9 @@ The `roi_file` parameter (`-r` or `--roi_file`) can be a NIfTI image that is eit
 
 Command:
 
-`niimasker output/ -c config.json`
+`nixtract output/ -c config.json`
 
-If you want to extract out voxelwise data for more than one region, you'll have to provide a new `roi_file` each time, and thus run `niimasker` separately for each ROI. Thanks to the configuration file, however, you can just change the command-line call, but keep the configuration file the same. For example, say you have two functional images (each with a TR=2) and you want to extract out two ROIs and perform some temporal filtering. Set the `config.json` to:
+If you want to extract out voxelwise data for more than one region, you'll have to provide a new `roi_file` each time, and thus run `nixtract` separately for each ROI. Thanks to the configuration file, however, you can just change the command-line call, but keep the configuration file the same. For example, say you have two functional images (each with a TR=2) and you want to extract out two ROIs and perform some temporal filtering. Set the `config.json` to:
 
 ```JSON
 {
@@ -271,7 +271,7 @@ If you want to extract out voxelwise data for more than one region, you'll have 
 }
 ```
 
-Then, you can iteratively call niimasker using a for-loop (python example shown):
+Then, you can iteratively call nixtract using a for-loop (python example shown):
 
 ```python
 import subprocess
@@ -280,7 +280,7 @@ rois = ['motor_cortex.nii.gz', 'premotor_cortex.nii.gz']
 
 for mask in rois:
     roi_name = mask.split('.')[0] # remove file extension
-    cmd = ('niimasker timeseries/{} -r {} -c config.json'.format(roi_name, mask))
+    cmd = ('nixtract timeseries/{} -r {} -c config.json'.format(roi_name, mask))
     print(cmd)
     subprocess.run(cmd, shell=True)
 ```
@@ -289,7 +289,7 @@ Each iteration changes the ROI and output directory, but the configuration is th
 
 ### Working with an atlas
 
-`niimasker` also lets you use an atlas that contains multiple regions, where voxels belonging to each region are labeled with numerical index. This is a typical functional connectivity use-case where you're interested in analyzing the relationships between the timeseries of multiple regions. A typical `config.json` for two functional images (TR=2), where you want to extract data from a 3-region atlas and perform some additional processing would be:
+`nixtract` also lets you use an atlas that contains multiple regions, where voxels belonging to each region are labeled with numerical index. This is a typical functional connectivity use-case where you're interested in analyzing the relationships between the timeseries of multiple regions. A typical `config.json` for two functional images (TR=2), where you want to extract data from a 3-region atlas and perform some additional processing would be:
 
 ```JSON
 {
@@ -312,13 +312,13 @@ Each iteration changes the ROI and output directory, but the configuration is th
 
 Command:
 
-`niimasker output/ -c config.json`
+`nixtract output/ -c config.json`
 
 **Note:** When using an atlas, you can also pass a NIfTI image to `mask_img` (`--mask_img` or `-m`) to restrict atlas-extraction to specific voxels. A general example is using a subject specific whole-brain mask in order to exclude non-brain voxels from extraction. Or, you may only want the visual regions of your atlas and you can pass in an occipital lobe mask.
 
 ### Using atlases fetched by `nilearn`
 
-`niimasker` also gives you the option to specify an atlas that is fetched directly by `nilearn` (a full list of datasets/atlases that can be fetched by `nilearn` can be found [here](https://nilearn.github.io/modules/reference.html#module-nilearn.datasets)). The following atlases are available:
+`nixtract` also gives you the option to specify an atlas that is fetched directly by `nilearn` (a full list of datasets/atlases that can be fetched by `nilearn` can be found [here](https://nilearn.github.io/modules/reference.html#module-nilearn.datasets)). The following atlases are available:
 
 | Atlas Name  | Parameter 1                                       | Parameter 2                       | Parameter 3 | `nilearn` function                                                                                                                                                                         |
 |-------------|---------------------------------------------------|-----------------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -329,7 +329,7 @@ Command:
 | `talairach` | `hemisphere`, `lobe`, `gyrus`, `tissue`, `ba`     | n/a                               | n/a         | [`fetch_atlas_talairach`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_talairach.html#nilearn.datasets.fetch_atlas_talairach)                                  |
 | `yeo`       | `thin_7`, `thick_7`, `thin_17`, `thick_17`         | n/a                               | n/a        | [`fetch_atlas_yeo_2011`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_yeo_2011.html#nilearn.datasets.fetch_atlas_yeo_2011)                                     |
 
-To fetch an atlas, `niimasker` takes a query string for `roi` in the following format: `nilearn:<atlas name>:<atlas-parameters>`. For instance, the Yeo atlas can be fetch as so: `nilearn:yeo:thick_7`
+To fetch an atlas, `nixtract` takes a query string for `roi` in the following format: `nilearn:<atlas name>:<atlas-parameters>`. For instance, the Yeo atlas can be fetch as so: `nilearn:yeo:thick_7`
 
 Subparameters in the `basc` and `schaefer` atlases are separated by hyphen. For instance, `nilearn:basc:sym-20` to fetch the Basc symmetrical 20-network atlas, and `nilearn:schaefer:400-17-2` to fetch the 400 region, 17-network atlas at 2mm spatial resolution.
 
@@ -363,7 +363,7 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
 | 50  | -20 | -42 |
 | -38 | -27 | 69  |
 
-`niimasker` will place a sphere centered around each coordinate, and extract the mean signal of each sphere. The radius of the spheres (in mm) is set using `radius` (`--radius`). If no radius is set, then only the signal from the coordinate voxel is extracted. By default, `niimasker` will raise an error if any of the spheres are overlapping, but you can allow the spheres to overlap by setting `allow_overlap: true` (or using `--allow_overlap`). An example configuration file is shown below: 
+`nixtract` will place a sphere centered around each coordinate, and extract the mean signal of each sphere. The radius of the spheres (in mm) is set using `radius` (`--radius`). If no radius is set, then only the signal from the coordinate voxel is extracted. By default, `nixtract` will raise an error if any of the spheres are overlapping, but you can allow the spheres to overlap by setting `allow_overlap: true` (or using `--allow_overlap`). An example configuration file is shown below: 
 
 ```JSON
 {
@@ -386,13 +386,13 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
 }
 ```
 
-**Note:** A big drawback of placing spheres on coordinates is that the regions are an artificial shape, and will likely include voxels from unwanted sources such as white matter, CSF and non-brain voxels. Passing a gray matter mask to `mask_img` (`-m` or `--mask_img`) will prevent this problem by taking the intersection of the mask and the spheres generated by niimasker/nilearn. Doing so will ensure that each region you are extracting from will contain only gray matter (and therefore many, if not all, spheres will no longer be spheres). It is recommended to use subject-specific masks, such as those generated by Freesurfer. In this case, you will need to run niimasker separately for each subject (see *Working with single ROI masks* for an example python script that iteratively runs niimasker).
+**Note:** A big drawback of placing spheres on coordinates is that the regions are an artificial shape, and will likely include voxels from unwanted sources such as white matter, CSF and non-brain voxels. Passing a gray matter mask to `mask_img` (`-m` or `--mask_img`) will prevent this problem by taking the intersection of the mask and the spheres generated by nixtract/nilearn. Doing so will ensure that each region you are extracting from will contain only gray matter (and therefore many, if not all, spheres will no longer be spheres). It is recommended to use subject-specific masks, such as those generated by Freesurfer. In this case, you will need to run nixtract separately for each subject (see *Working with single ROI masks* for an example python script that iteratively runs nixtract).
 
-The spheres, or the resulting sphere intersects if `mask_img` is used, are saved to `niimasker_data/spheres_img.nii.gz`.
+The spheres, or the resulting sphere intersects if `mask_img` is used, are saved to `nixtract_data/spheres_img.nii.gz`.
 
 ## Using confound regressors
 
-Often times you want to use a set of confound regressors (e.g., head motion parameters) to denoise the timeseries data for connectivity analyses. These confound regressors can be passed into niimasker with the `regressor_files` parameter, in which each regressor file should have a corresponding functional image in `input_files`. Both `regressor_files` and `input_files` are naturally sorted within niimasker. If  these file sets follow the same file naming prefix, they should be in the same order. **Always** check the corresponding regressor file is used with the input file (see the generated report or `parameters.json`). 
+Often times you want to use a set of confound regressors (e.g., head motion parameters) to denoise the timeseries data for connectivity analyses. These confound regressors can be passed into nixtract with the `regressor_files` parameter, in which each regressor file should have a corresponding functional image in `input_files`. Both `regressor_files` and `input_files` are naturally sorted within nixtract. If  these file sets follow the same file naming prefix, they should be in the same order. **Always** check the corresponding regressor file is used with the input file (see the generated report or `parameters.json`). 
 
 With `regressor_files` provided, subsets of regressors can be specified using `regressors` (do not use `regressor_names`, it is now deprecated). `regressors` can be column headers of the `regressor_files` if all headers are present in every file. Or, you can simply pass the name of a predefined confound strategy defined by [load_confounds](https://github.com/SIMEXP/load_confounds). These currently include:
 *  `Params2` : Mean white matter and CSF signals, with high-pass filter.
@@ -407,7 +407,7 @@ Note that regressor files must have the appropriate column names for these strat
 
 ## Working with fmriprep data
 
-`niimasker` is ideally meant for BIDS-formatted data (although currently not requiring it), and is intended to seamlessly work with [fmriprep](https://fmriprep.readthedocs.io/en/stable/). To extract data from an entire fmriprep dataset, set your `input_files` and `regressor_files` as the following in your `config.json`:
+`nixtract` is ideally meant for BIDS-formatted data (although currently not requiring it), and is intended to seamlessly work with [fmriprep](https://fmriprep.readthedocs.io/en/stable/). To extract data from an entire fmriprep dataset, set your `input_files` and `regressor_files` as the following in your `config.json`:
 
 ```JSON
 {
@@ -417,7 +417,7 @@ Note that regressor files must have the appropriate column names for these strat
 ```
 (Note: Remove `/ses*/` if you have single-session data)
 
-Thanks to the BIDS structure of the data, you can provide wildcard patterns for `input_files` and `regressor_files`, and `niimasker` will automatically align regressor files with their respective functional image. From here, you can add in the remaining the parameters you want. An equivalent configuration to the previous example is as follows:
+Thanks to the BIDS structure of the data, you can provide wildcard patterns for `input_files` and `regressor_files`, and `nixtract` will automatically align regressor files with their respective functional image. From here, you can add in the remaining the parameters you want. An equivalent configuration to the previous example is as follows:
 
 ```JSON
 {

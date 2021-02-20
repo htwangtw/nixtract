@@ -17,10 +17,10 @@ import scipy
 import sklearn
 import numpy
 import natsort
-import pkg_resources  # for niimasker itself
+import pkg_resources  # for nixtract itself
 
-from niimasker.niimasker import make_timeseries
-from niimasker.atlases import get_labelled_atlas
+from nixtract.nixtract import make_timeseries
+from nixtract.atlases import get_labelled_atlas
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
@@ -194,7 +194,7 @@ def _check_params(params):
             raise ValueError('Labels must be a filename or a list of strings.')
 
     if params['roi_file'].startswith('nilearn:'):
-        cache = os.path.join(params['output_dir'], 'niimasker_data')
+        cache = os.path.join(params['output_dir'], 'nixtract_data')
         os.makedirs(cache, exist_ok=True)
         atlas, labels = get_labelled_atlas(params['roi_file'], data_dir=cache,
                                            return_labels=True)
@@ -226,14 +226,14 @@ def main():
 
     # finalize parameters
     os.makedirs(params['output_dir'], exist_ok=True)
-    os.makedirs(os.path.join(params['output_dir'], 'niimasker_data'),
+    os.makedirs(os.path.join(params['output_dir'], 'nixtract_data'),
                 exist_ok=True)
     params = _check_params(params)
 
     # add in meta data
     versions = {
         'python': python_version(),
-        'niimasker': pkg_resources.require("niimasker")[0].version,
+        'nixtract': pkg_resources.require("nixtract")[0].version,
         'numpy': numpy.__version__,
         'scipy': scipy.__version__,
         'pandas': pd.__version__,
@@ -247,7 +247,7 @@ def main():
     param_info = {'command': " ".join(sys.argv), 'parameters': params,
                   'meta_data': versions}
 
-    metadata_path = os.path.join(params['output_dir'], 'niimasker_data')
+    metadata_path = os.path.join(params['output_dir'], 'nixtract_data')
     param_file = os.path.join(metadata_path, 'parameters.json')
 
     with open(param_file, 'w') as fp:
@@ -260,5 +260,5 @@ def main():
 
 
 if __name__ == '__main__':
-    raise RuntimeError("`niimasker/cli.py` should not be run directly. Please "
+    raise RuntimeError("`nixtract/cli.py` should not be run directly. Please "
                        "`pip install` rextract and use the `rextract` command.")

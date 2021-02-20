@@ -13,13 +13,13 @@ from itertools import repeat
 from nilearn.image import load_img, math_img, resample_to_img
 from nilearn.input_data import (NiftiMasker, NiftiLabelsMasker,NiftiSpheresMasker)
 from nilearn.input_data.nifti_spheres_masker import _apply_mask_and_get_affinity
-from niimasker.report import generate_report
+from nixtract.report import generate_report
 
 
 def _load_from_strategy(denoiser, fname):
     """Verifies if load_confounds strategy is useable given the regressor files.
     load_confounds will raise it's own exception, but add an additional 
-    niimasker-specific exception that clarifies the incompatibility.
+    nixtract-specific exception that clarifies the incompatibility.
     """ 
     error_msg = ('load_confound strategy incompatible with provided regressor '
                  'files. Check regressor files if they contain the appropriate '
@@ -294,7 +294,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     if isinstance(masker, NiftiSpheresMasker):
         masker.spheres_img = _get_spheres_from_masker(masker, input_files[0])
         masker.spheres_img.to_filename(os.path.join(output_dir, 
-                                                    'niimasker_data', 
+                                                    'nixtract_data', 
                                                     'spheres_image.nii.gz'))
 
     # set as list of NoneType if no regressor files; makes it easy for

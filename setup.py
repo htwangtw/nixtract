@@ -4,7 +4,7 @@ import io
 
 __version__ = re.search(
     r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-    io.open('niimasker/__init__.py', encoding='utf_8_sig').read()
+    io.open('nixtract/__init__.py', encoding='utf_8_sig').read()
     ).group(1)
 
 test_deps = ['pytest-cov',
@@ -15,15 +15,15 @@ extras = {
 }
 
 setup(
-    name='niimasker',
+    name='nixtract',
     version=__version__,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*",
                                     "tests"]),
-    package_data={'niimasker': ['templates/*.html']},
+    package_data={'nixtract': ['templates/*.html']},
     license='MIT',
     author='Dan Gale',
     long_description=open('README.md').read(),
-    url='https://github.com/danjgale/nii-masker',
+    url='https://github.com/danjgale/nixtract',
     python_requires='>=3.6.0',
     install_requires=[
         'numpy>=1.16.5',
@@ -42,7 +42,7 @@ setup(
     setup_requires=['pytest-runner'],
     entry_points={
         'console_scripts': [
-            'niimasker=niimasker.cli:main'
+            'nixtract=nixtract.cli:main'
             ]
         }
 )

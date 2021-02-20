@@ -17,7 +17,7 @@ def _plot_roi_timeseries(data, cmap):
     Parameters
     ----------
     data : pandas.core.DataFrame
-        Timeseries data extracted from niimasker.py
+        Timeseries data extracted from nixtract.py
     cmap : matplotlib.colors.LinearSegmentedColormap
         Colormap to use.
     Returns

@@ -7,7 +7,7 @@ import nibabel as nib
 from nilearn.datasets import fetch_atlas_aal
 from nilearn.input_data import NiftiLabelsMasker, NiftiMasker
 
-from niimasker import niimasker
+from nixtract import nixtract
 
 
 ## HELPERS
@@ -46,7 +46,7 @@ def regressors(tmpdir):
 @pytest.fixture
 def post_processed_data(atlas_data, regressors):
     """A post-processed version of the atlas_data, which is generated directly
-    by nilearn rather than niimasker. The results from niimasker should
+    by nilearn rather than nixtract. The results from nixtract should
     directly match what is produced by nilearn.
     """
     labels_img = _get_atlas()['maps']
@@ -68,7 +68,7 @@ def post_processed_data(atlas_data, regressors):
 #     regressors = regressors.values
 
 #     n_scans = 3
-#     img, regs = niimasker._discard_initial_scans(atlas_data, n_scans, regressors)
+#     img, regs = nixtract._discard_initial_scans(atlas_data, n_scans, regressors)
 #     assert img.get_data().shape[3] == atlas_data.get_data().shape[3] - n_scans
 #     assert regs.shape[0] == regressors.shape[0] - n_scans
 
@@ -80,15 +80,15 @@ def test_set_masker(atlas_data):
 
     # check multi ROI atlas
     atlas_img = nib.load(atlas['maps'])
-    masker = niimasker._set_masker(atlas_img)
+    masker = nixtract._set_masker(atlas_img)
     assert isinstance(masker, NiftiLabelsMasker)
 
     # check single ROI atlas; create binary mask from atlas first
     bin_img = nib.Nifti1Image(np.where(atlas_img.get_data() == 2001, 1., 0),
                               atlas_img.affine)
-    masker = niimasker._set_masker(bin_img)
+    masker = nixtract._set_masker(bin_img)
     assert isinstance(masker, NiftiLabelsMasker)
 
     # set as_voxels to true which should return a NiftiMasker object instead
-    masker = niimasker._set_masker(bin_img, as_voxels=True)
+    masker = nixtract._set_masker(bin_img, as_voxels=True)
     assert isinstance(masker, NiftiMasker)
