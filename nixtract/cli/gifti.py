@@ -5,9 +5,8 @@ import os
 import json
 import shutil
 
-from nixtract.extract import extract_gifti, run_extraction
 from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
-                               make_param_file, check_glob, empty_to_none)
+                               make_param_file, check_glob, run_extraction)
 from nixtract.extractors import GiftiExtractor
 
 def _cli_parser():
@@ -92,9 +91,8 @@ def extract_gifti(input_file, roi_file, regressor_file, params):
         extractor.discard_scans(params['discard_scans'])
     
     # extract timeseries and save
-    extractor.extract(params['labels'])
-
-    out = os.path.join(params['out'])
+    extractor.extract()
+    out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.timeseries.to_csv(out, sep='\t')
     
 
