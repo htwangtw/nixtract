@@ -6,10 +6,10 @@ import json
 import shutil
 import pandas as pd
 
-from nixtract.extract import run_extraction, extract_nifti
 from nixtract.atlases import get_labelled_atlas
 from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
-                               make_param_file, check_glob, empty_to_none)
+                               make_param_file, check_glob, empty_to_none, 
+                               run_extraction)
 from nixtract.extractors import NiftiExtractor
 
 def _cli_parser():
