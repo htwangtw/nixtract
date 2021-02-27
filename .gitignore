@@ -3,7 +3,7 @@ __pycache__/
 .vscode/
 .eggs/
 nixtract.egg-info
-playground/
+scratch/
 .pytest_cache/
 tests/data-dir
 docs/ 
