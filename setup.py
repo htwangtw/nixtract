@@ -42,7 +42,9 @@ setup(
     setup_requires=['pytest-runner'],
     entry_points={
         'console_scripts': [
-            'nixtract=nixtract.cli:main'
+            'xtract-nifti=nixtract.cli.nifti:main',
+            'xtract-gifti=nixtract.cli.gifti:main',
+            'xtract-cifti=nixtract.cli.cifti:main'
             ]
         }
 )
