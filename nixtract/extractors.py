@@ -2,12 +2,13 @@
 and CIfTIs.
 """ 
 import os
+import warnings
 import numpy as np
 import pandas as pd
 import nibabel as nib
 from nilearn.input_data import (NiftiMasker, NiftiSpheresMasker, 
                                 NiftiLabelsMasker)
-from nilearn.image import load_img, math_img, resample_to_img
+from nilearn import signal, image
 from nilearn.input_data.nifti_spheres_masker import _apply_mask_and_get_affinity
 import load_confounds
 
@@ -116,8 +117,8 @@ def _get_spheres_from_masker(masker, ref_img):
     spheres_img = nib.Nifti1Image(arr, ref_img.affine)
     
     if masker.mask_img is not None:
-        mask_img_ = resample_to_img(masker.mask_img, spheres_img)
-        spheres_img = math_img('img1 * img2', img1=spheres_img, 
+        mask_img_ = image.resample_to_img(masker.mask_img, spheres_img)
+        spheres_img = image.math_img('img1 * img2', img1=spheres_img, 
                                img2=mask_img_)
     return spheres_img
 
@@ -142,7 +143,7 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
         if 'allow_overlap' in kwargs:
             kwargs.pop('allow_overlap')
     
-        roi_img = load_img(roi_file)
+        roi_img = image.load_img(roi_file)
         n_rois = len(np.unique(roi_img.get_data())) - 1
         print('  {} region(s) detected from {}'.format(n_rois,
                                                        roi_img.get_filename()))
@@ -241,24 +242,99 @@ class NiftiExtractor(ImageExtractor):
 
 
 ### SURFACE EXTRACTION
-def _read_gifti_label(fname):
-    """Read valid roi label files for giftis"""
-    if fname.endswith('.annot'):
+
+
+def _read_annot(fname):
+    try:
         annot = nib.freesurfer.read_annot(fname)
         return annot[0], annot[2]
-    
-    else:
-        img = nib.load(fname)
-        darray = img.agg_data()
-        # ensure one scan
-        if len(darray.shape) != 1:
-            raise ValueError('.label.gii mask img must be 1D (a single scan)')
+    except ValueError:
+        raise ValueError('Invalid .annot file')
 
-        labels = img.labeltable.get_labels_as_dict()
-        if labels:
-            return darray, labels
-        else:
-            raise ValueError('Empty label table in .label.gii mask img')
+
+def _read_gifti_label(fname):
+    img = nib.load(fname)
+    if not isinstance(img, nib.GiftiImage):
+        raise ValueError('.label.gii (roi file) not an instance of '
+                            'GiftiImage')
+    # check if one scan and validate labels                  
+    darray = img.agg_data()
+    if len(darray.shape) != 1:
+        raise ValueError('.label.gii (roi file) must be 1D')
+    labels = img.labeltable.get_labels_as_dict()
+    if not labels:
+        raise ValueError('Empty label table in .label.gii (roi file)')
+    return darray, labels
+
+
+def _mask_vertices(darray, roi, as_vertices=False):
+    labels = np.unique(roi)
+    if len(labels) > 2 and as_vertices:
+        raise ValueError('Using as_vertices=True with more than one region '
+                         'in roi file. Vertex-level extraction can only be '
+                         'performed with a single-region (binary) roi file.')
+    if as_vertices:
+        timeseries = darray[:, roi.ravel().astype(bool)]
+    else:
+        timeseries = np.zeros((darray.shape[0], len(labels)))
+        for i, l in enumerate(labels):
+            mask = np.where(roi == l, 1, 0).astype(bool)
+            timeseries[:, i] = darray[:, mask].mean(axis=1)
+    return timeseries
+
+
+def mask_gifti(darray, roi, regressors, as_vertices=False, **kwargs):
+    x = darray.copy().T
+    timeseries = _mask_vertices(x, roi, as_vertices)
+    return signal.clean(timeseries, confounds=regressors, **kwargs)
+
+
+class GiftiExtractor(ImageExtractor):
+    def __init__(self, lh_file, rh_file, lh_roi_file, rh_roi_file,  
+                 as_vertices=False, **kwargs):
+            
+        self.lh_file = lh_file
+        self.rh_file = rh_file
+        self.lh_darray = nib.load(lh_file).agg_data()
+        self.rh_darray = nib.load(lh_file).agg_data()
+        self.as_vertices = as_vertices
+        self.lh_roi_file = lh_roi_file
+        self.rh_roi_file = rh_roi_file
+        self.lh_roi = _read_gifti_label(lh_roi_file)
+        self.rh_roi = _read_gifti_label(rh_roi_file)
+        self._clean_kwargs = kwargs
+
+    def discard_scans(self, n_scans):
+        """Discard first N scans from data and regressors, if available 
+
+        Parameters
+        ----------
+        n_scans : int
+            Number of initial scans to remove
+        """
+        self.lh_darray = self.lh_darray[:, n_scans:]
+        self.rh_darray = self.rh_darray[:, n_scans:]
+
+        if self.regressors is not None:
+            self.regressors = self.regressors.iloc[n_scans:, :]
+    
+    def extract(self):
+
+        lh_tseries = mask_gifti(self.lh_darray, self.lh_roi_file, 
+                                 self.regressors, self.as_vertices, 
+                                 self._clean_kwargs)
+        rh_tseries = mask_gifti(self.rh_darray, self.rh_roi_file, 
+                                 self.regressors, self.as_vertices, 
+                                 self._clean_kwargs)
+
+        cols = np.hstack([lh_tseries.columns, rh_tseries.columns])
+        if len(cols) > len(set(cols)):
+            # both hemispheres have at least one of the same 
+            lh_tseries.columns = ['lh_' + i for i in lh_tseries.columns]
+            rh_tseries.columns = ['rh_' + i for i in rh_tseries.columns]
+        
+        self.timeseries = pd.concat([lh_tseries, rh_tseries])
+
 
 
 def _read_cifti_dlabel(fname):
@@ -266,26 +342,10 @@ def _read_cifti_dlabel(fname):
     pass
 
 
-class GiftiExtractor(ImageExtractor):
-    def __init__(self, fname, roi_file, as_vertices=False, **kwargs):
-        
-        
-        self.fname = fname
-        self.img = nib.load(fname)
-        self.as_vertices = as_vertices
-        self.roi_file = _read_gifti_label(roi_file)
-
-
-    def _get_default_labels(self):
-        pass
-
-    def discard_scans(self, n_scans):
-        pass
-    
-
 class CiftiExtractor(ImageExtractor):
-    def __inti__(self,):
+    def __inti__(self, fname, roi_file, as_vertices, **kwargs):
         pass
+        
 
     def discard_scans(self, n_scans):
         pass
