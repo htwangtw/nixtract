@@ -32,7 +32,7 @@ def _cli_parser():
                              'roi_file coordinates in MNI space. Refer to online '
                              'documentation for more on how these options map '
                              'onto the underlying nilearn masker classes.')
-    parser.add_argument('--mask_file', type=str, metavar='mask_img',
+    parser.add_argument('--mask_img', type=str, metavar='mask_img',
                         help='File path of a NIfTI mask a to be used when '
                              '`roi_file` is a) an multi-region atlas or a b) list '
                              'of coordinates. This will restrict extraction to '
@@ -108,7 +108,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
         roi_file=roi_file, 
         labels=params['labels'],
         as_voxels=params['as_voxels'],
-        mask_file=params['mask_file'], 
+        mask_img=params['mask_img'], 
         radius=params['radius'], 
         allow_overlap=params['allow_overlap'], 
         standardize=params['standardize'], 
@@ -117,7 +117,9 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
         low_pass=params['low_pass'], 
         detrend=params['detrend']
     )
-    extractor.set_regressors(regressor_file, params['regressors'])
+    if regressor_file is not None:
+        extractor.set_regressors(regressor_file, params['regressors'])
+
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
     
@@ -131,14 +133,13 @@ def main():
     """Primary entrypoint in program"""
     params = vars(_cli_parser())
 
-    params = handle_base_args(params)
     params = _check_nifti_params(params)
     metadata_path = make_param_file(params)
     shutil.copy2(params['roi_file'], metadata_path)
 
     # setup and run extraction
     run_extraction(extract_nifti, params['input_files'], params['roi_file'], 
-                   params)
+                   params['regressor_files'], params)
 
 if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/nifti.py` should not be run directly. "

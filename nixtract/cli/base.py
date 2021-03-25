@@ -86,7 +86,7 @@ def merge_params(params, config):
     """Merge CLI params with configuration file params. Configuration params 
     will overwrite the CLI params.
     """
-    return dict(list(params.items()) + list(params.items()))
+    return {**params, **config}
 
 
 def check_glob(x):
@@ -96,12 +96,20 @@ def check_glob(x):
     elif isinstance(x, list):
         return x
     else:
-        raise ValueError('Input data files (NIfTIs and confounds) must be a'
+        raise ValueError('Input data files (images and confounds) must be a'
                          'string or list of string')
 
 
 def handle_base_args(params):
     """Check the validity of base CLI arguments"""
+
+    # read config file if available -- overwrites CLI
+    if params['config'] is not None:
+        with open(params['config'], 'rb') as f:
+            conf_params = json.load(f)
+        params = merge_params(params, conf_params)
+    params.pop('config')
+
     params['regressor_files'] = empty_to_none(params['regressor_files'])
     if params['regressor_files'] is not None:
         params['regressor_files'] = check_glob(params['regressor_files'])
@@ -110,13 +118,6 @@ def handle_base_args(params):
     params['regressors'] = empty_to_none(params['regressors'])
     if isinstance(params['regressors'], str):
         params['regressors'] = [params['regressors']]
-
-    # read config file if available -- overwrites CLI
-    if params['config'] is not None:
-        with open(params['config'], 'rb') as f:
-            conf_params = json.load(f)
-        params = merge_params(params, conf_params)
-    params.pop('config')
 
     # make output dirs
     os.makedirs(params['out_dir'], exist_ok=True)

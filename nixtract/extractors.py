@@ -29,7 +29,7 @@ def _load_from_strategy(denoiser, fname):
 
 
 class ImageExtractor(object):
-                    
+
     def set_regressors(self, regressor_file, regressors=None):
         """Set appropriate regressors."""
 
@@ -70,7 +70,7 @@ class ImageExtractor(object):
         return self
 
     def check_extracted(self):
-        if not hasattr(self, 'data'):
+        if not hasattr(self, 'timeseries'):
             raise ValueError('timeseries data does not yet exist. Must call '
                              'extract().')
 
@@ -175,7 +175,8 @@ class NiftiExtractor(ImageExtractor):
         self.as_voxels = as_voxels
         
         # determine masker
-        self.masker = _set_volume_masker(roi_file, as_voxels, **kwargs)
+        self.masker, self.n_rois = _set_volume_masker(roi_file, as_voxels, 
+                                                      **kwargs)
         self.masker_type = self.masker.__class__.__name__
         
     def _get_default_labels(self):
@@ -336,19 +337,31 @@ class GiftiExtractor(ImageExtractor):
         self.timeseries = pd.concat([lh_tseries, rh_tseries])
 
 
+# def _read_cifti_dlabel(fname):
 
-def _read_cifti_dlabel(fname):
-    """Read and validate .dlabel.nii"""
-    pass
+#     img = nib.load(fname)
+#     if not isinstance(img, nib.Cifti2Image):
+#         raise ValueError('.dlabel.nii (roi file) not an instance of '
+#                          'Cifti2Image')
+#     darray = np.array(img.get_fdata()).ravel()
+
+# def _mask_cifti():
+#     timeseries = _mask_vertices(x, roi, as_vertices)
+#     return signal.clean(timeseries, confounds=regressors, **kwargs)
 
 
-class CiftiExtractor(ImageExtractor):
-    def __inti__(self, fname, roi_file, as_vertices, **kwargs):
-        pass
+# class CiftiExtractor(ImageExtractor):
+#     def __inti__(self, fname, roi_file, as_vertices, **kwargs):
+        
+#         self.fname = fname
+#         self.darray = nib.load(fname)
+#         self.roi_file = _read_cifti_dlabel(roi_file)
+#         self.as_vertices = as_vertices
+#         self._clean_kwargs = kwargs
         
 
-    def discard_scans(self, n_scans):
-        pass
+#     def discard_scans(self, n_scans):
+#         pass
     
-    def extract(self):
-        pass
+#     def extract(self):
+#         pass
