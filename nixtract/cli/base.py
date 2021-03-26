@@ -19,10 +19,9 @@ import pandas
 import natsort
 import pkg_resources  # for nixtract itself
 
-def base_cli():
+def base_cli(parser):
     """Generate CLI with arguments shared among all interfaces"""
-
-    parser = argparse.ArgumentParser()
+    
     parser.add_argument('out_dir', type=str,
                         help='The path to the output directory. Created if it'
                              'does not already exist')
@@ -160,7 +159,7 @@ def make_param_file(params):
 
 
 def replace_file_ext(fname):
-    for ext in ['nii', 'nii.gz', 'func.gii', 'dtseries.nii']:
+    for ext in ['.nii', '.nii.gz', '.func.gii', '.dtseries.nii']:
         if fname.endswith(ext):
             return os.path.basename(fname).replace(ext, '_timeseries.tsv')
             
@@ -168,11 +167,15 @@ def replace_file_ext(fname):
 def run_extraction(extract_func, input_files, roi_file, regressor_files, 
                    params):
 
+
+    if regressor_files is None:
+        regressor_files = [regressor_files] * len(input_files)
+
     n_jobs = params['n_jobs']
     # no parallelization
     if n_jobs == 1:
-        for i, input_file in enumerate(input_files):
-            extract_func(input_file, roi_file, regressor_files[i], params)
+        for i, in_file in enumerate(input_files):
+            extract_func(in_file, roi_file, regressor_files[i], params)
     else:
         # repeat parameters are held constant for all parallelized iterations
         args = zip(
