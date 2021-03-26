@@ -1,5 +1,6 @@
 """Functions for command line interface
 """
+import argparse
 import sys
 import os
 import json
@@ -14,7 +15,7 @@ from nixtract.extractors import NiftiExtractor
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
-    parser = base_cli()
+    parser = argparse.ArgumentParser()
     parser.add_argument('--input_files', nargs='+', type=str,
                         help='One or more input NIfTI images. Can also be a '
                              'single string with a wildcard (*) to specify all '
@@ -62,6 +63,7 @@ def _cli_parser():
     parser.add_argument('--allow_overlap', action='store_true', default=False,
                         help='Permit overlapping spheres when coordinates are '
                              'provided to `roi_file` and sphere-radius is not None.')                             
+    parser = base_cli(parser)
     return parser.parse_args()
 
 
