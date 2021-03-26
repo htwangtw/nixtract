@@ -23,7 +23,7 @@ def _load_from_strategy(denoiser, fname):
                  'columns determined by load_confounds.')
     try:
         confounds = denoiser.load(fname)
-        return pd.DataFrame(confounds, columns=denoiser.columns_)
+        return confounds, denoiser.columns_
     except ValueError as e:
         raise ValueError(error_msg) from e
 
@@ -41,21 +41,22 @@ class ImageExtractor(object):
 
         if regressors is None:
             # use all regressors from file
-            regs = pd.read_csv(regressor_file, sep=r'\t')
+            regs, names = pd.read_csv(regressor_file, sep=r'\t')
         elif len(regressors) == 1 and (regressors[0] in strategies):
             # predefined strategy
             denoiser = eval('load_confounds.{}()'.format(regressors[0]))
-            regs = _load_from_strategy(denoiser, regressor_file)
+            regs, names = _load_from_strategy(denoiser, regressor_file)
         elif set(regressors) <= set(flexible_strategies):
             # flexible strategy
             denoiser = load_confounds.Confounds(strategy=regressors)
-            regs = _load_from_strategy(denoiser, regressor_file)
+            regs, names = _load_from_strategy(denoiser, regressor_file)
         elif all([x not in strategies + flexible_strategies 
                   for x in regressors]):
             # list of regressor names
             try:
                 regs = pd.read_csv(regressor_file, sep='\t', 
                                    usecols=regressors)
+                names = regressors
             except ValueError as e:
                 msg = 'Not all regressors are found in regressor file'
                 raise ValueError(msg) from e
@@ -66,7 +67,8 @@ class ImageExtractor(object):
                              '(flexible or non-flexible).')
 
         self.regressor_file = regressor_file
-        self.regressors = regs
+        self.regressor_names = names
+        self.regressor_array = regs
         return self
 
     def check_extracted(self):
@@ -178,6 +180,8 @@ class NiftiExtractor(ImageExtractor):
         self.masker, self.n_rois = _set_volume_masker(roi_file, as_voxels, 
                                                       **kwargs)
         self.masker_type = self.masker.__class__.__name__
+        self.regressor_names = None
+        self.regressor_array = None
         
     def _get_default_labels(self):
         """Generate default numerical (1-indexed) labels depending on the 
@@ -207,8 +211,8 @@ class NiftiExtractor(ImageExtractor):
         arr = arr[:, :, :, n_scans:]
         self.img = nib.Nifti1Image(arr, self.img.affine)
 
-        if self.regressors is not None:
-            self.regressors = self.regressors.iloc[n_scans:, :]
+        if self.regressor_array is not None:
+            self.regressor_array = self.regressor_array.iloc[n_scans:, :]
         
         return self
 
@@ -216,7 +220,7 @@ class NiftiExtractor(ImageExtractor):
         """Extract timeseries data using the determined nilearn masker"""
         print('  Extracting from {}'.format(os.path.basename(self.fname)))
         timeseries = self.masker.fit_transform(self.img, 
-                                               confounds=self.regressors.values)
+                                               confounds=self.regressor_array)
         self.timeseries = pd.DataFrame(timeseries)
         
         if self.labels is None:
@@ -244,11 +248,17 @@ class NiftiExtractor(ImageExtractor):
 
 ### SURFACE EXTRACTION
 
+def _load_gifti_array():
+    # agg_data will sometimes return tuple instead of numpy array, so make
+    # sure to always return numpy array
+    pass
 
 def _read_annot(fname):
     try:
         annot = nib.freesurfer.read_annot(fname)
-        return annot[0], annot[2]
+        darray = annot[0]
+        labels = np.array(annot[2], dtype=np.str)
+        return darray, labels
     except ValueError:
         raise ValueError('Invalid .annot file')
 
@@ -256,17 +266,50 @@ def _read_annot(fname):
 def _read_gifti_label(fname):
     img = nib.load(fname)
     if not isinstance(img, nib.GiftiImage):
-        raise ValueError('.label.gii (roi file) not an instance of '
-                            'GiftiImage')
+        raise ValueError(f'{fname} not an read as a GiftiImage')
     # check if one scan and validate labels                  
     darray = img.agg_data()
     if len(darray.shape) != 1:
-        raise ValueError('.label.gii (roi file) must be 1D')
+        raise ValueError(f'{fname} is not 1D')
     labels = img.labeltable.get_labels_as_dict()
     if not labels:
-        raise ValueError('Empty label table in .label.gii (roi file)')
+        raise ValueError(f'Empty label table in {fname}')
     return darray, labels
 
+
+def _load_gifti_roi(fname):
+
+    if fname.endswith('.annot'):
+        darray, labels = _read_annot(fname)
+    elif fname.endswith('.gii'):
+        darray, labels = _read_gifti_label(fname)
+    else:
+        raise ValueError(f'{fname} must be a valid .annot or .gii file')
+    return darray, labels
+
+
+def _load_hem(in_file, roi_file):
+    if in_file:
+        in_array = nib.load(in_file).agg_data()
+        
+        if roi_file:
+            roi_darray, labels = _load_gifti_roi(roi_file)
+            loaded = True
+        else:
+            raise ValueError('Missing ROI file')
+        
+        return in_array, roi_darray, labels, loaded
+    else:
+        return None, None, None, False
+
+
+def _detect_hem(lh_array, rh_array):
+    if all([isinstance(i, np.ndarray) for i in [lh_array, rh_array]]):
+        return 'both'
+    
+
+
+    
 
 def _mask_vertices(darray, roi, as_vertices=False):
     labels = np.unique(roi)
@@ -284,26 +327,52 @@ def _mask_vertices(darray, roi, as_vertices=False):
     return timeseries
 
 
-def mask_gifti(darray, roi, regressors, as_vertices=False, **kwargs):
+def mask_gifti(darray, roi, regressors=None, as_vertices=False, 
+               pre_clean=False, **kwargs):
     x = darray.copy().T
-    timeseries = _mask_vertices(x, roi, as_vertices)
-    return signal.clean(timeseries, confounds=regressors, **kwargs)
+    if pre_clean:
+        x = signal.clean(x, confounds=regressors, **kwargs)
+        return _mask_vertices(x, roi, as_vertices)
+    else:
+        timeseries = _mask_vertices(x, roi, as_vertices)
+        return signal.clean(timeseries, confounds=regressors, **kwargs)
+
+
+def _combine_timeseries(lh, rh):
+    cols = np.hstack([lh.columns, rh.columns])
+    if len(cols) > len(set(cols)):
+        # both hemispheres share at least one column name so add suffix
+        # to prevent overlap
+        lh.columns = ['L_' + i for i in lh.columns]
+        rh.columns = ['R_' + i for i in rh.columns]
+    return pd.concat([lh, rh], axis=1)
 
 
 class GiftiExtractor(ImageExtractor):
-    def __init__(self, lh_file, rh_file, lh_roi_file, rh_roi_file,  
-                 as_vertices=False, **kwargs):
+    def __init__(self, lh_file=None, rh_file=None, lh_roi_file=None, 
+                 rh_roi_file=None,  as_vertices=False, pre_clean=False, 
+                 **kwargs):
             
         self.lh_file = lh_file
-        self.rh_file = rh_file
-        self.lh_darray = nib.load(lh_file).agg_data()
-        self.rh_darray = nib.load(lh_file).agg_data()
-        self.as_vertices = as_vertices
         self.lh_roi_file = lh_roi_file
+        (self.lh_darray, self.lh_roi, 
+         self.lh_labels, self._lh) = _load_hem(lh_file, lh_roi_file)
+
+        self.rh_file = rh_file
         self.rh_roi_file = rh_roi_file
-        self.lh_roi = _read_gifti_label(lh_roi_file)
-        self.rh_roi = _read_gifti_label(rh_roi_file)
+        (self.rh_darray, self.rh_roi, 
+         self.rh_labels, self._rh) = _load_hem(rh_file, rh_roi_file)
+
+        if not any([self._lh, self._rh]):
+            raise ValueError('At least one hemisphere must be provided to '
+                             'GiftiExtractor')
+
+        self.as_vertices = as_vertices
+        self.pre_clean = pre_clean
         self._clean_kwargs = kwargs
+
+        self.regressor_names = None
+        self.regressor_array = None
 
     def discard_scans(self, n_scans):
         """Discard first N scans from data and regressors, if available 
@@ -313,29 +382,34 @@ class GiftiExtractor(ImageExtractor):
         n_scans : int
             Number of initial scans to remove
         """
-        self.lh_darray = self.lh_darray[:, n_scans:]
-        self.rh_darray = self.rh_darray[:, n_scans:]
+        if self._lh:
+            self.lh_darray = self.lh_darray[:, n_scans:]
+        if self._rh:
+            self.rh_darray = self.rh_darray[:, n_scans:]
 
-        if self.regressors is not None:
-            self.regressors = self.regressors.iloc[n_scans:, :]
+        if self.regressor_array is not None:
+            self.regressor_array = self.regressor_array.iloc[n_scans:, :]
     
     def extract(self):
 
-        lh_tseries = mask_gifti(self.lh_darray, self.lh_roi_file, 
-                                 self.regressors, self.as_vertices, 
-                                 self._clean_kwargs)
-        rh_tseries = mask_gifti(self.rh_darray, self.rh_roi_file, 
-                                 self.regressors, self.as_vertices, 
-                                 self._clean_kwargs)
-
-        cols = np.hstack([lh_tseries.columns, rh_tseries.columns])
-        if len(cols) > len(set(cols)):
-            # both hemispheres have at least one of the same 
-            lh_tseries.columns = ['lh_' + i for i in lh_tseries.columns]
-            rh_tseries.columns = ['rh_' + i for i in rh_tseries.columns]
+        if self._lh:
+            lh_tseries = mask_gifti(self.lh_darray, self.lh_roi, 
+                                    self.regressor_array, self.as_vertices, 
+                                    self.pre_clean, **self._clean_kwargs)
+            lh_tseries = pd.DataFrame(lh_tseries, columns=self.lh_labels)
         
-        self.timeseries = pd.concat([lh_tseries, rh_tseries])
+        if self._rh:
+            rh_tseries = mask_gifti(self.rh_darray, self.rh_roi, 
+                                    self.regressor_array, self.as_vertices, 
+                                    self.pre_clean, **self._clean_kwargs)
+            rh_tseries = pd.DataFrame(rh_tseries, columns=self.rh_labels)
 
+        if self._lh and self._rh:
+            self.timeseries = _combine_timeseries(lh_tseries, rh_tseries)
+        elif self._lh:
+            self.timeseries = lh_tseries
+        elif self._rh:
+            self.timeseries = rh_tseries
 
 # def _read_cifti_dlabel(fname):
 

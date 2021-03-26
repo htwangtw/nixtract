@@ -1,5 +1,6 @@
 """Functions for command line interface
 """
+import argparse
 import sys
 import os
 import json
@@ -11,7 +12,7 @@ from nixtract.extractors import GiftiExtractor
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
-    parser = base_cli()
+    parser = argparse.ArgumentParser()
     # input files
     parser.add_argument('--lh_files', nargs='+', type=str, metavar='lh_files',
                         help='One or more input functional GIfTI images '
@@ -37,23 +38,31 @@ def _cli_parser():
                              'annotation file (.annot) for the right hemipshere. '
                              'Must include one or more label/annotations with '
                              'label names.')
+    # other
     parser.add_argument('--as_vertices', default=False,
                         action='store_true',
                         help='Whether to extract out the timeseries of each '
                              'vertex instead of the mean timeseries. This is '
                              'only available for single ROI binary masks. '
-                             'Default False.')                         
+                             'Default False.')
+    parser.add_argument('--denoise-pre-extract', default=False,
+                        action='store_true',
+                        help='Denoise data (e.g., filtering, confound '
+                             'regression) before timeseries extraction. '
+                             'Otherwise, denoising is done on the extracted '
+                             'timeseries, which is consistent with nilearn and '
+                             'more computationally efficient. Default False.')                  
+    parser = base_cli(parser)                         
     return parser.parse_args()
 
 
-def _check_hem_input(x, hem):
-    if x is None:
-        raise ValueError(f'No {hem} input files provided')
-    else:
-        x = check_glob(x)
-        if not x:
-            raise ValueError(f'Glob pattern did not find {hem} input files')
-    return x
+
+def _equalize_lengths(a, b):
+    if len(a) > len(b):
+        b *= len(a)
+    elif len(a) < len(b):
+        a *= len(b)
+    return a, b
 
 
 def _check_gifti_params(params):
@@ -61,38 +70,66 @@ def _check_gifti_params(params):
     params = handle_base_args(params)
 
     for hem in ['lh', 'rh']:
-        params[f'{hem}_files'] = _check_hem_input(params[f'{hem}_files'], hem)
-        if not params[f'{hem}_roi_file']:
-            raise ValueError(f'No {hem} roi file provided')
-    
+        if params[f'{hem}_files']:
+            params[f'{hem}_files'] = check_glob(params[f'{hem}_files'])
+            if len(params[f'{hem}_files']) == 0:
+                raise ValueError(f'Glob pattern did not find {hem} input files')
+        else:
+            params[f'{hem}_files'] = [None]
+
+    params[f'lh_files'], params[f'rh_files'] = _equalize_lengths(params[f'lh_files'],
+                                                                 params[f'rh_files'])
+
     return params
+
+
+def _set_out_fname(input_file, out_dir):
+    if all(input_file):
+        # check file naming for hemispheres and create a unified out file if valid
+        if 'hemi-L' in input_file[0]:
+            out_fname = input_file[0].replace('hemi-L', 'hemi-LR')
+        else:
+            raise ValueError("Gifti hemisphere should be identified in "
+                             "filenames with 'hemi-L' or 'hemi-R'")
+    elif input_file[0]:
+        out_fname = input_file[0]
+    elif input_file[1]:
+        out_fname = input_file[1]
+    else:
+        raise ValueError('Must include input file from at least one '
+                         'hemisphere')
+
+    return os.path.join(out_dir, replace_file_ext(out_fname))
 
 
 def extract_gifti(input_file, roi_file, regressor_file, params):
     """Gifti-specific mask_and_save"""
-    
+
+    # validate input file(s) and make output file before extraction
+    out = _set_out_fname(input_file, params['out_dir'])
+
     # set up extraction
     extractor = GiftiExtractor(
-        lh_fname=input_file[0],
-        rh_fname=input_file[1],
+        lh_file=input_file[0],
+        rh_file=input_file[1],
         lh_roi_file=roi_file[0],
         rh_roi_file=roi_file[1],
         as_vertices=params['as_vertices'],
-        radius=params['radius'], 
-        allow_overlap=params['allow_overlap'], 
+        pre_clean=params['denoise_pre_extract'],
         standardize=params['standardize'], 
         t_r=params['t_r'], 
         high_pass=params['high_pass'], 
         low_pass=params['low_pass'], 
         detrend=params['detrend']
     )
-    extractor.set_regressors(regressor_file, params['regressors'])
+    if regressor_file is not None:
+        extractor.set_regressors(regressor_file, params['regressors'])
+
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
     
     # extract timeseries and save
     extractor.extract()
-    out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.timeseries.to_csv(out, sep='\t')
     
 
@@ -100,21 +137,22 @@ def main():
     """Primary entrypoint in program"""
     params = vars(_cli_parser())
 
-    params = handle_base_args(params)
     params = _check_gifti_params(params)
     metadata_path = make_param_file(params)
-    shutil.copy2(params['lh_roi_file'], metadata_path)
-    shutil.copy2(params['rh_roi_file'], metadata_path)
+
+    for roi_file in [params['lh_roi_file'], params['rh_roi_file']]:
+        if roi_file:
+            shutil.copy2(roi_file, metadata_path)
 
     # setup and run extraction
-    input_files = zip(params['lh_input_files'], params['rh_input_files'])
-    roi_file = zip(params['lh_roi_file'], params['rh_roi_file'])
-    run_extraction(extract_gifti, params['input_files'], params['roi_file'], 
-                   params)
+    input_files = list(zip(params['lh_files'], params['rh_files']))
+    roi_files = (params['lh_roi_file'], params['rh_roi_file'])
+    run_extraction(extract_gifti, input_files, roi_files, 
+                   params['regressor_files'], params)
 
 
 if __name__ == '__main__':
-    raise RuntimeError("`nixtract/cli/nifti.py` should not be run directly. "
+    raise RuntimeError("`nixtract/cli/gifti.py` should not be run directly. "
                        "Please `pip install` nixtract and use the "
                        "`xtract-gifti` command.")
 
