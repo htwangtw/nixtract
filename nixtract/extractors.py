@@ -303,14 +303,6 @@ def _load_hem(in_file, roi_file):
         return None, None, None, False
 
 
-def _detect_hem(lh_array, rh_array):
-    if all([isinstance(i, np.ndarray) for i in [lh_array, rh_array]]):
-        return 'both'
-    
-
-
-    
-
 def _mask_vertices(darray, roi, as_vertices=False):
     labels = np.unique(roi)
     if len(labels) > 2 and as_vertices:
@@ -324,6 +316,7 @@ def _mask_vertices(darray, roi, as_vertices=False):
         for i, l in enumerate(labels):
             mask = np.where(roi == l, 1, 0).astype(bool)
             timeseries[:, i] = darray[:, mask].mean(axis=1)
+    
     return timeseries
 
 
@@ -336,6 +329,14 @@ def mask_gifti(darray, roi, regressors=None, as_vertices=False,
     else:
         timeseries = _mask_vertices(x, roi, as_vertices)
         return signal.clean(timeseries, confounds=regressors, **kwargs)
+
+
+def _make_timeseries_df(tseries, labels, as_vertices):
+    if as_vertices:
+        cols = [f'vert{i}' for i in np.arange(tseries.shape[1])]
+        return pd.DataFrame(tseries, columns=cols)
+    else:
+        return pd.DataFrame(tseries, columns=labels)
 
 
 def _combine_timeseries(lh, rh):
@@ -396,13 +397,15 @@ class GiftiExtractor(ImageExtractor):
             lh_tseries = mask_gifti(self.lh_darray, self.lh_roi, 
                                     self.regressor_array, self.as_vertices, 
                                     self.pre_clean, **self._clean_kwargs)
-            lh_tseries = pd.DataFrame(lh_tseries, columns=self.lh_labels)
+            lh_tseries = _make_timeseries_df(lh_tseries, self.lh_labels, 
+                                             self.as_vertices)
         
         if self._rh:
             rh_tseries = mask_gifti(self.rh_darray, self.rh_roi, 
                                     self.regressor_array, self.as_vertices, 
                                     self.pre_clean, **self._clean_kwargs)
-            rh_tseries = pd.DataFrame(rh_tseries, columns=self.rh_labels)
+            rh_tseries = _make_timeseries_df(rh_tseries, self.rh_labels, 
+                                             self.as_vertices)
 
         if self._lh and self._rh:
             self.timeseries = _combine_timeseries(lh_tseries, rh_tseries)
