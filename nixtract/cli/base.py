@@ -70,6 +70,8 @@ def base_cli(parser):
                         help='Configuration .json file as an alternative to '
                              'command-line arguments. See online documentation '
                              'for formatting and what keys to include')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, 
+                        help='Print out extraction progress')
     return parser
 
 

@@ -115,6 +115,7 @@ def extract_gifti(input_file, roi_file, regressor_file, params):
         lh_roi_file=roi_file[0],
         rh_roi_file=roi_file[1],
         as_vertices=params['as_vertices'],
+        verbose=params['verbose'],
         pre_clean=params['denoise_pre_extract'],
         standardize=params['standardize'], 
         t_r=params['t_r'], 
