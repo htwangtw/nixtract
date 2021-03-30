@@ -114,7 +114,7 @@ class GiftiExtractor(BaseExtractor):
             self.rh_darray = self.rh_darray[:, n_scans:]
 
         if self.regressor_array is not None:
-            self.regressor_array = self.regressor_array.iloc[n_scans:, :]
+            self.regressor_array = self.regressor_array[n_scans:, :]
     
     def extract(self):
 
