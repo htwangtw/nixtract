@@ -74,6 +74,8 @@ def _load_and_align_ciftis(dlabel, dtseries):
     dtseries_data = dtseries.get_fdata()
 
     if dlabel.shape[1] == dtseries.shape[1]:
+        print(dlabel.shape)
+        print(dtseries.shape)
         return dlabel_data, dtseries_data
     else:
         warnings.warn(f'dlabel has shape {dlabel.shape[1]} and dtseries has '
@@ -138,13 +140,12 @@ class CiftiExtractor(BaseExtractor):
         n_scans : int
             Number of initial scans to remove
         """
-        self.darray = self.darray[:, n_scans:]
+        self.darray = self.darray[n_scans:, :]
 
         if self.regressor_array is not None:
-            self.regressor_array = self.regressor_array.iloc[n_scans:, :]
+            self.regressor_array = self.regressor_array[n_scans:, :]
     
     def extract(self):
-        
         self.show_extract_msg(self.fname)
         tseries = mask_data(self.darray, self.dlabel_array, 
                             self.regressor_array, self.as_vertices, 
