@@ -1,5 +1,6 @@
 
 import numpy as np
+import pandas as pd
 from nilearn import signal
 
 
@@ -20,12 +21,20 @@ def _mask(darray, roi, as_vertices=False):
     return timeseries
 
 
-def mask_vertices(darray, roi, regressors=None, as_vertices=False, 
-               pre_clean=False, **kwargs):
-    x = darray.copy().T
+def mask_data(darray, roi, regressors=None, as_vertices=False, 
+              pre_clean=False, **kwargs):
+    x = darray.copy()
     if pre_clean:
         x = signal.clean(x, confounds=regressors, **kwargs)
         return _mask(x, roi, as_vertices)
     else:
         timeseries = _mask(x, roi, as_vertices)
         return signal.clean(timeseries, confounds=regressors, **kwargs)
+
+
+def label_timeseries(tseries, labels, as_vertices):
+    if as_vertices:
+        cols = [f'vert{i}' for i in np.arange(tseries.shape[1])]
+        return pd.DataFrame(tseries, columns=cols)
+    else:
+        return pd.DataFrame(tseries, columns=labels)
