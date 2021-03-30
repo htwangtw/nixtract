@@ -74,8 +74,6 @@ def _load_and_align_ciftis(dlabel, dtseries):
     dtseries_data = dtseries.get_fdata()
 
     if dlabel.shape[1] == dtseries.shape[1]:
-        print(dlabel.shape)
-        print(dtseries.shape)
         return dlabel_data, dtseries_data
     else:
         warnings.warn(f'dlabel has shape {dlabel.shape[1]} and dtseries has '
