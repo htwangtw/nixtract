@@ -131,7 +131,7 @@ def extract_gifti(input_file, roi_file, regressor_file, params):
     
     # extract timeseries and save
     extractor.extract()
-    extractor.timeseries.to_csv(out, sep='\t')
+    extractor.save(out)
     
 
 def main():

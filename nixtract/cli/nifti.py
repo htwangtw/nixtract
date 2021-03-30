@@ -129,7 +129,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     # extract timeseries and save
     extractor.extract()
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
-    extractor.timeseries.to_csv(out, sep='\t')
+    extractor.save(out)
 
 
 def main():
