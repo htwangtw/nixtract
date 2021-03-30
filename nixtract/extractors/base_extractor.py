@@ -68,6 +68,10 @@ class BaseExtractor(object):
             raise ValueError('timeseries data does not yet exist. Must call '
                              'extract().')
 
+    def save(self, out):
+        self.check_extracted()
+        self.timeseries.to_csv(out, sep='\t', index=False)
+
     def show_extract_msg(self, fname):
         if self.verbose:
             t = datetime.now().strftime("%H:%M:%S")
