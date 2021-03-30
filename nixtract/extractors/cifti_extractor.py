@@ -42,7 +42,6 @@ def _get_models(img):
     models = {}
     for i, m in enumerate(brain_models):
         struct = m.brain_structure
-        n_vertices = m.surface_number_of_vertices 
         models[struct] = {'count': m.index_count, 'offset': m.index_offset, 
                           'model_index': i, 'type': m.model_type}
         if m.model_type == 'CIFTI_MODEL_TYPE_SURFACE':
