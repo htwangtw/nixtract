@@ -5,7 +5,7 @@ import pandas as pd
 import nibabel as nib
 
 from .base_extractor import BaseExtractor
-from .utils import mask_vertices
+from .utils import mask_data, label_timeseries
 
 def _load_gifti_array():
     # agg_data will sometimes return tuple instead of numpy array, so make
@@ -61,14 +61,6 @@ def _load_hem(in_file, roi_file):
         return in_array, roi_darray, labels, loaded
     else:
         return None, None, None, False
-
-
-def _make_timeseries_df(tseries, labels, as_vertices):
-    if as_vertices:
-        cols = [f'vert{i}' for i in np.arange(tseries.shape[1])]
-        return pd.DataFrame(tseries, columns=cols)
-    else:
-        return pd.DataFrame(tseries, columns=labels)
 
 
 def _combine_timeseries(lh, rh):
@@ -128,18 +120,18 @@ class GiftiExtractor(BaseExtractor):
 
         if self._lh:
             self.show_extract_msg(self.lh_file)
-            lh_tseries = mask_vertices(self.lh_darray, self.lh_roi, 
-                                       self.regressor_array, self.as_vertices, 
-                                       self.pre_clean, **self._clean_kwargs)
-            lh_tseries = _make_timeseries_df(lh_tseries, self.lh_labels, 
+            lh_tseries = mask_data(self.lh_darray.T, self.lh_roi, 
+                                   self.regressor_array, self.as_vertices, 
+                                   self.pre_clean, **self._clean_kwargs)
+            lh_tseries = label_timeseries(lh_tseries, self.lh_labels, 
                                              self.as_vertices)
         
         if self._rh:
             self.show_extract_msg(self.rh_file)
-            rh_tseries = mask_vertices(self.rh_darray, self.rh_roi, 
-                                       self.regressor_array, self.as_vertices, 
-                                       self.pre_clean, **self._clean_kwargs)
-            rh_tseries = _make_timeseries_df(rh_tseries, self.rh_labels, 
+            rh_tseries = mask_data(self.rh_darray.T, self.rh_roi, 
+                                   self.regressor_array, self.as_vertices, 
+                                   self.pre_clean, **self._clean_kwargs)
+            rh_tseries = label_timeseries(rh_tseries, self.rh_labels, 
                                              self.as_vertices)
 
         if self._lh and self._rh:
