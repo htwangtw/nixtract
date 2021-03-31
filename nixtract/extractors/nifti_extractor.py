@@ -103,7 +103,29 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
 class NiftiExtractor(BaseExtractor):
     def __init__(self, fname, roi_file, labels=None, as_voxels=False, 
                  verbose=False, **kwargs):
+        """[summary]
 
+        Parameters
+        ----------
+        fname : str
+            Functional data
+        roi_file : str
+            Nifti file containing numeric labels for each voxel to identify
+            each region. Can be an atlas/parcellation with multiple regions,
+            or a binary mask for a single region. Or, a .tsv file containing
+            central coordinates for each region. 
+        labels : str, optional
+            [description], by default None
+        as_voxels : bool, optional
+            Extract the individual voxel timeseries from a region. Only 
+            possible when roi_file is a binary mask (single region), by 
+            default False
+        verbose : bool, optional
+            Print out extraction timestamp, by default False
+        **kwargs 
+            Arguments to pass to a Nilearn masker object, which is determined
+            by the roi_file
+        """
         self.fname = fname
         self.img = nib.load(fname)
         self.roi_file = roi_file

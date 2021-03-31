@@ -164,6 +164,9 @@ class CiftiExtractor(BaseExtractor):
             computationally efficient. By default False
         verbose : bool, optional
             Print out extraction timestamp, by default False
+        **kwargs
+            Arguments to pass to nilearn.signal.clean other than 
+            confounds_regressors
         """
         
         self.fname = fname
