@@ -26,9 +26,9 @@ def base_cli(parser):
                         help='The path to the output directory. Created if it'
                              'does not already exist')
     parser.add_argument('--regressor_files', nargs='+', type=str,
-                        help='One or more tabular files with regressors in each '
-                             'column. The number of files must match the number '
-                             'of input files and must be in the '
+                        help='One or more tab-separated files with regressors '
+                             'in each column. The number of files must match '
+                             'the number of input files and must be in the '
                              'same order. The number of rows in each file must '
                              'match the number of timepoints in their '
                              'respective input files. Can also be a single '
@@ -36,7 +36,8 @@ def base_cli(parser):
                              'files matching the file pattern. If so, these '
                              'files are naturally sorted by file name prior to '
                              'extraction. Double check to make sure these are '
-                             'correctly aligned with the input files.')
+                             'correctly aligned with the input files (see the '
+                             'parameters.json in the output)')
     parser.add_argument('--regressors', nargs='+', type=str,
                         help='Regressor names or strategy to use for confound '
                              'regression. Must be a) list of specified column '
@@ -45,15 +46,16 @@ def base_cli(parser):
                              'list compatible with load_confounds flexible '
                              'denoising strategy options. See the documentation '
                              'https://github.com/SIMEXP/load_confounds. If no '
-                             'regressor information provided, then all '
-                             'regressors in regressor files are used')                    
+                             'regressor information provided but regressor '
+                             'files are provided, then all regressors in '
+                             'regressor files are used')                    
     parser.add_argument('--standardize', action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
                              'Default: False')
     parser.add_argument('--t_r', type=int, 
                         help='The TR of the functional files, specified in '
-                             'seconds. Must be included if temporal filtering '
-                             'is specified. Default: None')
+                             'seconds. Required if temporal '
+                             'filtering/detrending is specified. Default: None')
     parser.add_argument('--high_pass', type=float, 
                         help='High pass filter cut off in Hertz. Default: None')
     parser.add_argument('--low_pass', type=float, 
@@ -66,10 +68,12 @@ def base_cli(parser):
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='The number of CPUs to use if parallelization is '
                              'desired. Default: 1 (serial processing)')
-    parser.add_argument('--config', type=str.lower,
-                        help='Configuration .json file as an alternative to '
-                             'command-line arguments. See online documentation '
-                             'for formatting and what keys to include')
+    parser.add_argument('-c', '--config', type=str.lower,
+                        help='A configuration .json file to pass parameters '
+                             'This will overwrite command-line arguments if '
+                             'the same parameter is specified in both. See '
+                             'online documentation for formatting and what '
+                             'keys to include')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, 
                         help='Print out extraction progress')
     return parser
@@ -91,7 +95,24 @@ def merge_params(params, config):
 
 
 def check_glob(x):
-    """Run globbing if applicable"""
+    """Get files based on glob pattern
+
+    Parameters
+    ----------
+    x : str, list
+        A glob pattern string or a list of files. If a list, glob pattern 
+        matching is not performed.
+
+    Returns
+    -------
+    list
+        List of extracted file names.
+
+    Raises
+    ------
+    ValueError
+       x is neither a string nor list of strings
+    """
     if isinstance(x, str):
         return natsort.natsorted(glob.glob(x))
     elif isinstance(x, list):
@@ -102,8 +123,18 @@ def check_glob(x):
 
 
 def handle_base_args(params):
-    """Check the validity of base CLI arguments"""
+    """Check the validity of base CLI arguments
 
+    Parameters
+    ----------
+    params : dict
+        Input parameters
+
+    Returns
+    -------
+    dict
+        Validated parameters
+    """
     # read config file if available -- overwrites CLI
     if params['config'] is not None:
         with open(params['config'], 'rb') as f:
@@ -145,6 +176,18 @@ def _get_package_versions():
 
 
 def make_param_file(params):
+    """Generate a parameters.json file to be saved in the output
+
+    Parameters
+    ----------
+    params : dict
+        Input parameters
+
+    Returns
+    -------
+    str
+        Path to which metadata is stored, including parameters.json
+    """
     # add in meta data
     versions = _get_package_versions()
 
@@ -161,6 +204,18 @@ def make_param_file(params):
 
 
 def replace_file_ext(fname):
+    """Make a output _timeseries.tsv file based on the input file name
+
+    Parameters
+    ----------
+    fname : str
+        Input functional file
+
+    Returns
+    -------
+    str
+        _timeseries.tsv file to be used for output
+    """
     for ext in ['.nii', '.nii.gz', '.func.gii', '.dtseries.nii']:
         if fname.endswith(ext):
             return os.path.basename(fname).replace(ext, '_timeseries.tsv')
@@ -168,8 +223,28 @@ def replace_file_ext(fname):
 
 def run_extraction(extract_func, input_files, roi_file, regressor_files, 
                    params):
+    """[summary]
 
-
+    Parameters
+    ----------
+    extract_func : nixtract.cli.nifti.extract_nifti, 
+                   nixtract.cli.gifti.extract_gifti, or
+                   nixtract.cli.cifti.extract_cifti
+        Extraction function for the file type of input_files
+    input_files : list
+        List of input files for extraction. If extract_func is 
+        nixtract.cli.gifti.extract_gifti, then list must have tuples in which
+        each tuple is (left, right) hemisphere input files
+    roi_file : str or tuple
+        File that defines regions of interest(s). If extract_func is 
+        nixtract.cli.gifti.extract_gifti, then must be a tuple containing each
+        hemisphere, i.e. (left, right) 
+    regressor_files : list
+        List of regressor files to pair with input_files. Should be in the 
+        same order.
+    params : dict
+        Input parameter dictionary
+    """
     if regressor_files is None:
         regressor_files = [regressor_files] * len(input_files)
 

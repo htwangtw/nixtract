@@ -42,19 +42,19 @@ def _cli_parser():
     parser.add_argument('--as_vertices', default=False,
                         action='store_true',
                         help='Whether to extract out the timeseries of each '
-                             'vertex instead of the mean timeseries. This is '
-                             'only available for single ROI binary masks. '
-                             'Default False.')
+                             'vertex for a region instead of the mean '
+                             'timeseries. This is only available for when the '
+                             'roi file is single region, i.e. a binary mask. '
+                             'Default: False')
     parser.add_argument('--denoise-pre-extract', default=False,
                         action='store_true',
                         help='Denoise data (e.g., filtering, confound '
                              'regression) before timeseries extraction. '
                              'Otherwise, denoising is done on the extracted '
                              'timeseries, which is consistent with nilearn and '
-                             'more computationally efficient. Default False.')                  
+                             'is more computationally efficient. Default: False')                
     parser = base_cli(parser)                         
     return parser.parse_args()
-
 
 
 def _equalize_lengths(a, b):
@@ -84,8 +84,10 @@ def _check_gifti_params(params):
 
 
 def _set_out_fname(input_file, out_dir):
+    """Make output _timeseries.tsv filename based on what hemisphere are
+    provided
+    """
     if all(input_file):
-        # check file naming for hemispheres and create a unified out file if valid
         if 'hemi-L' in input_file[0]:
             out_fname = input_file[0].replace('hemi-L', 'hemi-LR')
         else:
@@ -102,16 +104,32 @@ def _set_out_fname(input_file, out_dir):
     return os.path.join(out_dir, replace_file_ext(out_fname))
 
 
-def extract_gifti(input_file, roi_file, regressor_file, params):
-    """Gifti-specific mask_and_save"""
+def extract_gifti(input_files, roi_file, regressor_file, params):
+    """Extract timeseries from a GIfTI image
+
+    Parameters
+    ----------
+    input_files : tuple
+        Tuple of left and right hemisphere func.gii files, (left, right). If
+        only one hemisphere is desired, then the other hemisphere can be 
+        specified as None, e.g., left only: (left, None).  
+    roi_file : tuple
+        Tuple of left and right hemisphere label.gii files, (left, right). If
+        only one hemisphere is desired, then the other hemisphere can be 
+        specified as None, e.g., left only: (left, None).  
+    regressor_file : str
+        File path of regressor file
+    params : dict
+        Parameter dictionary for extraction
+    """
 
     # validate input file(s) and make output file before extraction
-    out = _set_out_fname(input_file, params['out_dir'])
+    out = _set_out_fname(input_files, params['out_dir'])
 
     # set up extraction
     extractor = GiftiExtractor(
-        lh_file=input_file[0],
-        rh_file=input_file[1],
+        lh_file=input_files[0],
+        rh_file=input_files[1],
         lh_roi_file=roi_file[0],
         rh_roi_file=roi_file[1],
         as_vertices=params['as_vertices'],
@@ -135,9 +153,7 @@ def extract_gifti(input_file, roi_file, regressor_file, params):
     
 
 def main():
-    """Primary entrypoint in program"""
     params = vars(_cli_parser())
-
     params = _check_gifti_params(params)
     metadata_path = make_param_file(params)
 
@@ -155,5 +171,5 @@ def main():
 if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/gifti.py` should not be run directly. "
                        "Please `pip install` nixtract and use the "
-                       "`xtract-gifti` command.")
+                       "`nixtract-gifti` command.")
 

@@ -102,7 +102,20 @@ def _check_nifti_params(params):
 
 
 def extract_nifti(input_file, roi_file, regressor_file, params):
-    """Nifti-specific mask_and_save"""
+    """Extract timeseries from a NIfTI image
+
+    Parameters
+    ----------
+    input_files : str
+        File path of the functional nifti file
+    roi_file : str
+        File path of the roi file, where each region is labelled based on the
+        numeric values in the file 
+    regressor_file : str
+        File path of regressor file
+    params : dict
+        Parameter dictionary for extraction
+    """
 
     # set up extraction
     extractor = NiftiExtractor(
@@ -133,9 +146,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
 
 
 def main():
-    """Primary entrypoint in program"""
     params = vars(_cli_parser())
-
     params = _check_nifti_params(params)
     metadata_path = make_param_file(params)
     shutil.copy2(params['roi_file'], metadata_path)
@@ -147,4 +158,4 @@ def main():
 if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/nifti.py` should not be run directly. "
                        "Please `pip install` nixtract and use the "
-                       "`xtract-nifti` command.")
+                       "`nixtract-nifti` command.")

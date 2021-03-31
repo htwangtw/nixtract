@@ -20,24 +20,25 @@ def _cli_parser():
                              'with a wildcard (*) to specify all files matching '
                              'the file pattern. If so, these files are '
                              'naturally sorted by file name prior to '
-                             'extraction.')
+                             'extraction')
     parser.add_argument('--roi_file', type=str, metavar='roi_file', 
-                        help='CIfTI dlabel file (.dlabel.nii). Must contain '
-                             'label table.')
+                        help='CIfTI dlabel file (.dlabel.nii). Must contain a'
+                             'label table')
     # other
     parser.add_argument('--as_vertices', default=False,
                         action='store_true',
                         help='Whether to extract out the timeseries of each '
-                             'vertex instead of the mean timeseries. This is '
-                             'only available for single ROI binary masks. '
-                             'Default False.')
+                             'vertex for a region instead of the mean '
+                             'timeseries. This is only available for when the '
+                             'roi file is single region, i.e. a binary mask. '
+                             'Default: False')
     parser.add_argument('--denoise-pre-extract', default=False,
                         action='store_true',
                         help='Denoise data (e.g., filtering, confound '
                              'regression) before timeseries extraction. '
                              'Otherwise, denoising is done on the extracted '
                              'timeseries, which is consistent with nilearn and '
-                             'more computationally efficient. Default False.')                  
+                             'is more computationally efficient. Default: False')                  
     parser = base_cli(parser)                         
     return parser.parse_args()
 
@@ -61,7 +62,19 @@ def _check_cifti_params(params):
 
 
 def extract_cifti(input_file, roi_file, regressor_file, params):
-    """Gifti-specific mask_and_save"""
+    """Extract timeseries from a CIfTI image
+
+    Parameters
+    ----------
+    input_files : str
+        File path of the input .dtseries.nii file
+    roi_file : str
+        File path of the input .dlabel.nii file. 
+    regressor_file : str
+        File path of regressor file
+    params : dict
+        Parameter dictionary for extraction
+    """
 
     # set up extraction
     extractor = CiftiExtractor(
@@ -89,9 +102,7 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
     
 
 def main():
-    """Primary entrypoint in program"""
     params = vars(_cli_parser())
-
     params = _check_cifti_params(params)
     metadata_path = make_param_file(params)
     shutil.copy2(params['roi_file'], metadata_path)
@@ -103,5 +114,5 @@ def main():
 if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/cifti.py` should not be run directly. "
                        "Please `pip install` nixtract and use the "
-                       "`xtract-gifti` command.")
+                       "`nixtract-cifti` command.")
 
