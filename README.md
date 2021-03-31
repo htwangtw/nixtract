@@ -293,7 +293,7 @@ Instead of passing all of the parameters through the command-line, `nixtract` al
 
 Not all parameters need to be included in the configuration file; only the ones you wish to use. An example use-case that combines both the command-line parameters and configuration file:
 
-`nixtract-nifti output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
+`nixtract-nifti output/ -i img_1.nii.gz img_2.nii.gz --config config.json`
 
 Where `config.json` is:
 
