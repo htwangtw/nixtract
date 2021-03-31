@@ -7,13 +7,9 @@ import nibabel as nib
 from .base_extractor import BaseExtractor
 from .utils import mask_data, label_timeseries
 
-def _load_gifti_array():
-    # agg_data will sometimes return tuple instead of numpy array, so make
-    # sure to always return numpy array
-    pass
-
 
 def _read_annot(fname):
+    """Safely read a .annot file and return the vertices + labels"""
     try:
         annot = nib.freesurfer.read_annot(fname)
         darray = annot[0]
@@ -24,6 +20,7 @@ def _read_annot(fname):
 
 
 def _read_gifti_label(fname):
+    """Safely read a func.gii file"""
     img = nib.load(fname)
     if not isinstance(img, nib.GiftiImage):
         raise ValueError(f'{fname} not an read as a GiftiImage')
@@ -38,7 +35,7 @@ def _read_gifti_label(fname):
 
 
 def _load_gifti_roi(fname):
-
+    """Only read acceptable roi files"""
     if fname.endswith('.annot'):
         darray, labels = _read_annot(fname)
     elif fname.endswith('.gii'):
@@ -49,6 +46,7 @@ def _load_gifti_roi(fname):
 
 
 def _load_hem(in_file, roi_file):
+    """Load hemisphere only if func.gii and label.gii are available"""
     if in_file:
         in_array = nib.load(in_file).agg_data()
         
@@ -64,6 +62,7 @@ def _load_hem(in_file, roi_file):
 
 
 def _combine_timeseries(lh, rh):
+    """Combine hemispheres into a single timeseries table"""
     cols = np.hstack([lh.columns, rh.columns])
     if len(cols) > len(set(cols)):
         # both hemispheres share at least one column name so add suffix
@@ -77,6 +76,41 @@ class GiftiExtractor(BaseExtractor):
     def __init__(self, lh_file=None, rh_file=None, lh_roi_file=None, 
                  rh_roi_file=None,  as_vertices=False, pre_clean=False, 
                  verbose=False, **kwargs):
+        """Gifti extraction class. 
+
+        Either left, right or both hemispheres can be provided. To use a 
+        hemisphere, both the respective *h_file and the *h_roi_file must be 
+        provided. At least one hemisphere must be provided.
+
+        Parameters
+        ----------
+        lh_file : str, optional
+            Left hemisphere func.gii file, by default None
+        rh_file : str, optional
+            Right hemisphere func.gii file, by default None
+        lh_roi_file : str, optional
+            Left hemisphere label.gii or .annot file containing region 
+            labels, by default None
+        rh_roi_file : str, optional
+            Right hemisphere label.gii or .annot file containing region 
+            labels, by default None
+        as_vertices : bool, optional
+            Extract the individual vertex timeseries from a region. Only 
+            possible when roi_file is a binary mask (single region), by 
+            default False
+        pre_clean : bool, optional
+            Denoise data (e.g., filtering, confound regression) before 
+            timeseries extraction. Otherwise, denoising is done on the 
+            extracted timeseries, which is consistent with nilearn and is more
+            computationally efficient. By default False
+        verbose : bool, optional
+            Print out extraction timestamp, by default False
+
+        Raises
+        ------
+        ValueError
+            No hemispheres are provided
+        """
             
         self.lh_file = lh_file
         self.lh_roi_file = lh_roi_file
@@ -117,7 +151,7 @@ class GiftiExtractor(BaseExtractor):
             self.regressor_array = self.regressor_array[n_scans:, :]
     
     def extract(self):
-
+        """Extract timeseries"""
         if self._lh:
             self.show_extract_msg(self.lh_file)
             lh_tseries = mask_data(self.lh_darray.T, self.lh_roi, 

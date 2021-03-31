@@ -10,6 +10,7 @@ from .utils import mask_data, label_timeseries
 
 
 def _check_cifti(fname):
+    """Verify that file is read as a cifti"""
     img = nib.load(fname)
     if not isinstance(img, nib.Cifti2Image):
         raise ValueError(f'{fname} not an instance of Cifti2Image')
@@ -17,13 +18,14 @@ def _check_cifti(fname):
 
 
 def _read_dtseries(fname):
+    """Safely read dtseries file"""
     if not fname.endswith('.dtseries.nii'):
         raise ValueError(f'{fname} must be a .dtseries.nii file')
     return _check_cifti(fname)
 
 
 def _read_dlabel(fname):
-
+    """Safely read a dlabel file and return the array and labels"""
     if not fname.endswith('.dlabel.nii'):
         raise ValueError(f'{fname} must be a .dlabel.nii file')
     img = _check_cifti(fname)
@@ -36,9 +38,8 @@ def _read_dlabel(fname):
 
 
 def _get_models(img):
-
+    """Pull out all brain models from cifti file"""
     brain_models = list(img.header.get_index_map(1).brain_models)
-
     models = {}
     for i, m in enumerate(brain_models):
         struct = m.brain_structure
@@ -69,6 +70,33 @@ def _has_medwall(model):
 
 
 def _load_and_align_ciftis(dlabel, dtseries):
+    """Correctly align the dlabel with the dtseries data
+
+    If dlabel and dtseries have the same number of elements, then they are 
+    already aligned, and are each plainly loaded. If not, then iterate through
+    the brain models in dtseries and check vertex alignment of surface models, 
+    and the existence of volume models. This will happen if a) dlabel includes
+    medial wall vertices but dtseries does not or vice versa, or b) if dlabel
+    does not have all the brain models found in dtseries. 
+
+    Parameters
+    ----------
+    dlabel : nibabel.Cifti1Image
+        ROI/label file
+    dtseries : nibabel.Cifti1Image
+        Functional data
+
+    Returns
+    -------
+    np.ndarray, np.ndarray
+        Aligned arrays for the dlabel and dtseries, respectively
+
+    Raises
+    ------
+    ValueError
+        If dlabel and dtseries have different lengths but no medial wall has
+        been detected in either
+    """
 
     dlabel_data = dlabel.get_fdata().ravel()
     dtseries_data = dtseries.get_fdata()
@@ -88,6 +116,7 @@ def _load_and_align_ciftis(dlabel, dtseries):
         for k, v in dts_models.items():
   
             if k not in dl_models.keys():
+                # dlabel does not have the brain model
                 continue
 
             if dl_models[k]['count'] == v['count']:
@@ -95,11 +124,11 @@ def _load_and_align_ciftis(dlabel, dtseries):
                 dts_idx = np.arange(v['count']) + v['offset']
                 dl_idx = dts_idx
             elif _has_medwall(dl_models[k]) and not _has_medwall(v):
-                # select dtseries vertices from dlabel
+                # use dtseries vertices to index dlabel
                 dl_idx = v['indices'] + dl_models[k]['offset']
                 dts_idx = np.arange(v['count']) + v['offset']
             elif _has_medwall(v) and not _has_medwall(dl_models[k]):
-                # select dlabel vertices from dtseries
+                # use dlabel vertices to index dtseries
                 dts_idx = dl_models[k]['indices'] + v['offset']
                 dl_idx = np.arange(dl_models[k]['count']) + dl_models[k]['offset']
             else:
@@ -115,6 +144,27 @@ def _load_and_align_ciftis(dlabel, dtseries):
 class CiftiExtractor(BaseExtractor):
     def __init__(self, fname, roi_file, as_vertices=False, pre_clean=False, 
                  verbose=False, **kwargs):
+        """Cifti extraction class
+
+        Parameters
+        ----------
+        fname : str
+            Functional dtseries.nii file
+        roi_file : str
+            dlabel.nii file that identifies regions of interests. Can be an 
+            atlas/parcellation with multiple regions, or a binary mask
+        as_vertices : bool, optional
+            Extract the individual vertex timeseries from a region. Only 
+            possible when roi_file is a binary mask (single region), by 
+            default False
+        pre_clean : bool, optional
+            Denoise data (e.g., filtering, confound regression) before 
+            timeseries extraction. Otherwise, denoising is done on the 
+            extracted timeseries, which is consistent with nilearn and is more
+            computationally efficient. By default False
+        verbose : bool, optional
+            Print out extraction timestamp, by default False
+        """
         
         self.fname = fname
         self.dtseries = _read_dtseries(fname)
@@ -144,6 +194,7 @@ class CiftiExtractor(BaseExtractor):
             self.regressor_array = self.regressor_array[n_scans:, :]
     
     def extract(self):
+        """Extract timeseries"""
         self.show_extract_msg(self.fname)
         tseries = mask_data(self.darray, self.dlabel_array, 
                             self.regressor_array, self.as_vertices, 
