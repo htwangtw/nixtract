@@ -19,7 +19,6 @@ setup(
     version=__version__,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*",
                                     "tests"]),
-    package_data={'nixtract': ['templates/*.html']},
     license='MIT',
     author='Dan Gale',
     long_description=open('README.md').read(),
@@ -33,8 +32,6 @@ setup(
         'natsort>=7.1.1',
         'scipy>=1.5.0',
         'scikit-learn>=0.24.1',
-        'matplotlib>=3.3.0',
-        'jinja2>=2.11.3',
         'load_confounds'
     ],
     tests_require=test_deps,
