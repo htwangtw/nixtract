@@ -55,19 +55,24 @@ def base_cli(parser):
     parser.add_argument('--t_r', type=int, 
                         help='The TR of the functional files, specified in '
                              'seconds. Required if temporal '
-                             'filtering/detrending is specified. Default: None')
+                             'filtering/detrending is specified')
     parser.add_argument('--high_pass', type=float, 
-                        help='High pass filter cut off in Hertz. Default: None')
+                        help='High pass filter cut off in Hertz')
     parser.add_argument('--low_pass', type=float, 
-                        help='Low pass filter cut off in Hertz. Default: None')
+                        help='Low pass filter cut off in Hertz')
     parser.add_argument('--detrend', action='store_true', default=False,
-                        help='Temporally detrend the data. Default: None')
+                        help='Temporally detrend the data. Default: False')
     parser.add_argument('--discard_scans', type=int, 
                         help='Discard the first N scans of each functional '
-                             'image. Default: None')
+                             'image')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='The number of CPUs to use if parallelization is '
                              'desired. Default: 1 (serial processing)')
+    parser.add_argument('--n_decimals', type=int, 
+                        help='Specify the number of decimals for output '
+                             'timeseries files. Fewer decimals are recommended'
+                             'for reducing disk-space, particularly for large '
+                             'extractions')
     parser.add_argument('-c', '--config', type=str.lower,
                         help='A configuration .json file to pass parameters '
                              'This will overwrite command-line arguments if '

@@ -108,7 +108,7 @@ class BaseExtractor(object):
             raise ValueError('timeseries data does not yet exist. Must call '
                              'extract().')
 
-    def save(self, out):
+    def save(self, out, n_decimals=None):
         """Save file to a .tsv file
 
         Parameters
@@ -117,7 +117,10 @@ class BaseExtractor(object):
             Output file name
         """
         self.check_extracted()
-        self.timeseries.to_csv(out, sep='\t', index=False)
+        print(n_decimals)
+        float_format = f'%.{n_decimals}f' if n_decimals else None
+        self.timeseries.to_csv(out, sep='\t', index=False, 
+                               float_format=float_format)
 
     def show_extract_msg(self, fname):
         """Display extraction message if verbosity is set

@@ -1,9 +1,7 @@
 """Functions for command line interface
 """
 import argparse
-import sys
 import os
-import json
 import shutil
 import pandas as pd
 from nilearn.datasets import (fetch_atlas_destrieux_2009, fetch_atlas_yeo_2011,
@@ -236,7 +234,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     # extract timeseries and save
     extractor.extract()
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
-    extractor.save(out)
+    extractor.save(out, params['n_decimals'])
 
 
 def main():

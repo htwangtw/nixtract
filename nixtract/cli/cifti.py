@@ -98,7 +98,7 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
     # extract timeseries and save
     extractor.extract()
     out = out = os.path.join(params['out_dir'], replace_file_ext(input_file))
-    extractor.save(out)
+    extractor.save(out, params['n_decimals'])
     
 
 def main():

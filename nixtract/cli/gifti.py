@@ -149,7 +149,7 @@ def extract_gifti(input_files, roi_file, regressor_file, params):
     
     # extract timeseries and save
     extractor.extract()
-    extractor.save(out)
+    extractor.save(out, params['n_decimals'])
     
 
 def main():
