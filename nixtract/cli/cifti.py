@@ -15,23 +15,22 @@ def _cli_parser():
     parser = argparse.ArgumentParser()
     # input files
     parser.add_argument('--input_files', nargs='+', type=str,
-                        help='One or more input CIfTI dtseries images '
+                        help='One or more input CIfTI dtseries files '
                              '(.dtseries.nii). Can also be a single string '
-                             'with a wildcard (*) to specify all files matching '
+                             'with wildcards (*) to specify all files matching '
                              'the file pattern. If so, these files are '
                              'naturally sorted by file name prior to '
                              'extraction')
     parser.add_argument('--roi_file', type=str, metavar='roi_file', 
-                        help='CIfTI dlabel file (.dlabel.nii). Must contain a'
-                             'label table')
+                        help='CIfTI dlabel file (.dlabel.nii) with one or more '
+                             'labels')
     # other
     parser.add_argument('--as_vertices', default=False,
                         action='store_true',
-                        help='Whether to extract out the timeseries of each '
-                             'vertex for a region instead of the mean '
-                             'timeseries. This is only available for when the '
-                             'roi file is single region, i.e. a binary mask. '
-                             'Default: False')
+                        help='Extract the timeseries of each vertex in a '
+                             'a region rather than the mean timeseries.This is '
+                             'only available for when `roi_file` is single '
+                             'region, i.e. a binary mask. Default: False')
     parser.add_argument('--denoise-pre-extract', default=False,
                         action='store_true',
                         help='Denoise data (e.g., filtering, confound '

@@ -17,52 +17,52 @@ def _cli_parser():
     """Reads command line arguments and returns input specifications"""
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_files', nargs='+', type=str,
-                        help='One or more input NIfTI images. Can also be a '
-                             'single string with a wildcard (*) to specify all '
-                             'files matching the file pattern. If so, these '
-                             'files are naturally sorted by file name prior to '
-                             'extraction.')
+                        help='One or more input NIfTI images (.nii.gz or .nii). '
+                             'Can also be a single string with wildcards (*) '
+                             'to specify all files matching the file pattern. '
+                             'If so, these files are naturally sorted by file '
+                             'name prior to extraction')
     parser.add_argument('--roi_file', type=str, metavar='roi_file', 
                         help='Parameter that defines the region(s) of interest. '
                              'This can be 1) a file path to NIfTI image that is '
                              'an atlas of multiple regions or a binary mask of '
                              'one region, 2) a nilearn query string formatted as '
-                             '`nilearn:<atlas-name>:<atlas-parameters> (see '
-                             'online documentation), or 3) a file path to a '
-                             '.tsv file that has x, y, z columns that contain '
-                             'roi_file coordinates in MNI space. Refer to online '
-                             'documentation for more on how these options map '
-                             'onto the underlying nilearn masker classes.')
+                             '`nilearn:<atlas-name>:<atlas-parameters> 3) a '
+                             'file path to a .tsv file that has x, y, z columns '
+                             'that contain coordinates in MNI space. Refer to '
+                             'online documentation for more detail and how '
+                             'these options map onto the underlying nilearn '
+                             'masker classes')
     parser.add_argument('--mask_img', type=str, metavar='mask_img',
-                        help='File path of a NIfTI mask a to be used when '
-                             '`roi_file` is a) an multi-region atlas or a b) list '
+                        help='File path of a binary mask a to be used when '
+                             '`roi_file` is a) an multi-region atlas or b) a list '
                              'of coordinates. This will restrict extraction to '
                              'only voxels within the mask. If `roi_file` is a '
-                             'single-region binary mask, this will be ignored.')
+                             'single region binary mask, this will be ignored')
     parser.add_argument('--labels', nargs='+', type=str, metavar='labels',
-                        help='Labels corresponding to the mask numbers in '
-                             '`mask`. Can either be a list of strings, or a '
-                             '.tsv file that contains a `Labels` column. Labels '
-                             'must be sorted in ascending order to correctly '
+                        help='Labels corresponding to the region numbers in '
+                             '`roi_file`. Can either be a) a list of strings, b) '
+                             'or a .tsv file that contains a `Labels` column. '
+                             'Labels must be sorted in ascending order to correctly '
                              'correspond to the atlas indices. The number of '
                              'labels provided must match the number of non-zero '
-                             'indices in `mask`. Numeric indices are used if '
-                             'not provided (default)')
+                             'indices in `roi_file`. Numeric indices are used if '
+                             'not provided')
     parser.add_argument('--as_voxels', default=False, action='store_true',
-                        help='Whether to extract out the timeseries of each '
-                             'voxel instead of the mean timeseries. This is '
-                             'only available for single ROI binary masks. '
-                             'Default False.')
+                        help='Extract the timeseries of each voxel instead in a '
+                             'a region rather than the mean timeseries. This is '
+                             'only available for single region (binary) masks. '
+                             'Default: False')
     parser.add_argument('--radius', type=float, metavar='radius', 
                         help='Set the radius of the spheres (in mm) centered on '
                              'the coordinates provided in `roi_file`. Only applicable '
                              'when a coordinate .tsv file is passed to `roi_file`; '
                              'otherwise, this will be ignored. If not set, '
-                             'the nilearn default of extracting from a single '
-                             'voxel (the coordinates) will be used.')
+                             'the timeseries of each coordinate is extracted '
+                             '(nilearn default)')
     parser.add_argument('--allow_overlap', action='store_true', default=False,
                         help='Permit overlapping spheres when coordinates are '
-                             'provided to `roi_file` and sphere-radius is not None.')                             
+                             'provided to `roi_file` and `radius` is provided')                             
     parser = base_cli(parser)
     return parser.parse_args()
 
@@ -96,7 +96,6 @@ def get_labelled_atlas(query, data_dir=None, return_labels=True):
         Raised when the query does is not formatted correctly or if the no
         match found.
     """
-
     # extract parameters
     params = query.split(':')
     if len(params) == 3:
@@ -135,17 +134,10 @@ def get_labelled_atlas(query, data_dir=None, return_labels=True):
         labels = atlas['labels']
     elif atlas_name == 'schaefer':
         n_rois, networks, resolution = sub_param.split('-')
-        # corrected version of schaefer labels until fixed in nilearn
-        correct_url = ('https://raw.githubusercontent.com/ThomasYeoLab/CBIG/'
-                       'v0.14.3-Update_Yeo2011_Schaefer2018_labelname/'
-                       'stable_projects/brain_parcellation/'
-                       'Schaefer2018_LocalGlobal/Parcellations/MNI/'
-                      )
         atlas = fetch_atlas_schaefer_2018(n_rois=int(n_rois),
                                           yeo_networks=int(networks),
                                           resolution_mm=int(resolution),
-                                          data_dir=data_dir,
-                                          base_url=correct_url)
+                                          data_dir=data_dir)
         img = atlas['maps']
         labels = atlas['labels']
     else:

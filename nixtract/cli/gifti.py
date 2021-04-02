@@ -15,37 +15,36 @@ def _cli_parser():
     parser = argparse.ArgumentParser()
     # input files
     parser.add_argument('--lh_files', nargs='+', type=str, metavar='lh_files',
-                        help='One or more input functional GIfTI images '
+                        help='One or more input functional GIfTI files '
                              '(.func.gii) for the left hemisphere. Can also '
-                             'be a single string with a wildcard (*) to '
+                             'be a single string with wildcards (*) to '
                              'specify all files matching the file pattern. If '
                              'so, these files are naturally sorted by file '
                              'name prior to extraction')
     parser.add_argument('--rh_files', nargs='+', type=str, metavar='rh_files',
-                        help='One or more input functional GIfTI images '
+                        help='One or more input functional GIfTI files '
                              '(.func.gii) for the right hemisphere. Can also '
-                             'be a single string with a wildcard (*) to '
+                             'be a single string with wildcards (*) to '
                              'specify all files matching the file pattern. If '
                              'so, these files are naturally sorted by file '
                              'name prior to extraction')
     # roi files
     parser.add_argument('--lh_roi_file', type=str, metavar='roi_file', 
-                        help='A label GIfTI image (label.gii) or a Freesurfer '
+                        help='A label GIfTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the left hemipshere. '
-                             'Must include one or more label/annotations')
+                             'Must include one or more labels')
     parser.add_argument('--rh_roi_file', type=str, metavar='roi_file', 
-                        help='A label GIfTI image (label.gii) or a Freesurfer '
+                        help='A label GIfTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the right hemipshere. '
-                             'Must include one or more label/annotations with '
-                             'label names.')
+                             'Must include one or more labels')
     # other
     parser.add_argument('--as_vertices', default=False,
                         action='store_true',
-                        help='Whether to extract out the timeseries of each '
-                             'vertex for a region instead of the mean '
-                             'timeseries. This is only available for when the '
-                             'roi file is single region, i.e. a binary mask. '
-                             'Default: False')
+                        help='Extract the timeseries of each vertex in '
+                             'a region rather than the mean timeseries. This is '
+                             'only available for when `lh_roi_file` and/or '
+                             '`rh_roi_file` are a single region, i.e. a binary '
+                             'mask. Default: False')
     parser.add_argument('--denoise-pre-extract', default=False,
                         action='store_true',
                         help='Denoise data (e.g., filtering, confound '
