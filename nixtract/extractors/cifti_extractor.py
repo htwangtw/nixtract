@@ -1,8 +1,6 @@
 import warnings
 import numpy as np
-import pandas as pd
 import nibabel as nib
-from nilearn import signal
 
 from .base_extractor import BaseExtractor
 from .utils import mask_data, label_timeseries
@@ -30,10 +28,14 @@ def _read_dlabel(fname):
         raise ValueError(f'{fname} must be a .dlabel.nii file')
     img = _check_cifti(fname)
 
+    # actual numerical labels in data to compare with label table
+    vertex_labels = np.unique(img.get_fdata())
+
     label_dict = img.header.get_axis(index=0).label[0]
     labels = []
     for k, v in label_dict.items():
-        labels.append(v[0])
+        if k in vertex_labels:
+            labels.append(v[0])
     return img, labels
 
 
