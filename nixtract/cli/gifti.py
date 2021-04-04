@@ -11,18 +11,20 @@ from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
 from nixtract.extractors import GiftiExtractor
 
 def _cli_parser():
-    """Reads command line arguments and returns input specifications"""
+    """Reads GIFTI CLI arguments and returns input specifications combined with
+    those from the general CLI
+    """
     parser = argparse.ArgumentParser()
     # input files
     parser.add_argument('--lh_files', nargs='+', type=str, metavar='lh_files',
-                        help='One or more input functional GIfTI files '
+                        help='One or more input functional GIFTI files '
                              '(.func.gii) for the left hemisphere. Can also '
                              'be a single string with wildcards (*) to '
                              'specify all files matching the file pattern. If '
                              'so, these files are naturally sorted by file '
                              'name prior to extraction')
     parser.add_argument('--rh_files', nargs='+', type=str, metavar='rh_files',
-                        help='One or more input functional GIfTI files '
+                        help='One or more input functional GIFTI files '
                              '(.func.gii) for the right hemisphere. Can also '
                              'be a single string with wildcards (*) to '
                              'specify all files matching the file pattern. If '
@@ -30,11 +32,11 @@ def _cli_parser():
                              'name prior to extraction')
     # roi files
     parser.add_argument('--lh_roi_file', type=str, metavar='roi_file', 
-                        help='A label GIfTI file (.label.gii) or a Freesurfer '
+                        help='A label GIFTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the left hemipshere. '
                              'Must include one or more labels')
     parser.add_argument('--rh_roi_file', type=str, metavar='roi_file', 
-                        help='A label GIfTI file (.label.gii) or a Freesurfer '
+                        help='A label GIFTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the right hemipshere. '
                              'Must include one or more labels')
     # other
@@ -76,26 +78,54 @@ def _check_gifti_params(params):
         else:
             params[f'{hem}_files'] = [None]
 
+    # make None lists for a hemisphere the same length as the other
     params[f'lh_files'], params[f'rh_files'] = _equalize_lengths(params[f'lh_files'],
                                                                  params[f'rh_files'])
-
     return params
 
 
-def _set_out_fname(input_file, out_dir):
+def _set_out_fname(input_files, out_dir):
     """Make output _timeseries.tsv filename based on what hemisphere are
     provided
+
+    If left and right hemispheres are given, then file will be labeled 
+    'hemi-LR'. Otherwise, the hemisphere label will be the same as the 
+    provided hemisphere. 
+
+    This is a a validation function too, as it checks for the hemisphere label 
+    and also checks to make sure that at least one hemisphere is given.
+
+    Parameters
+    ----------
+    input_files : tuple
+        Left and right hemisphere input files: (left, right). At least one 
+        must not be None. BIDS hemisphere labels ('hemi-L', 'hemi-R') must
+        be in file names. 
+    out_dir : str
+        Output directory
+
+    Returns
+    -------
+    str
+        Determined output file name
+
+    Raises
+    ------
+    ValueError
+        No hemisphere label is in input files 
+    ValueError
+        No hemipshere input files provided
     """
-    if all(input_file):
-        if 'hemi-L' in input_file[0]:
-            out_fname = input_file[0].replace('hemi-L', 'hemi-LR')
+    if all(input_files):
+        if 'hemi-L' in input_files[0]:
+            out_fname = input_files[0].replace('hemi-L', 'hemi-LR')
         else:
             raise ValueError("Gifti hemisphere should be identified in "
                              "filenames with 'hemi-L' or 'hemi-R'")
-    elif input_file[0]:
-        out_fname = input_file[0]
-    elif input_file[1]:
-        out_fname = input_file[1]
+    elif input_files[0]:
+        out_fname = input_files[0]
+    elif input_files[1]:
+        out_fname = input_files[1]
     else:
         raise ValueError('Must include input file from at least one '
                          'hemisphere')
@@ -104,7 +134,7 @@ def _set_out_fname(input_file, out_dir):
 
 
 def extract_gifti(input_files, roi_file, regressor_file, params):
-    """Extract timeseries from a GIfTI image
+    """Extract timeseries from a GIFTI image
 
     Parameters
     ----------
@@ -121,11 +151,9 @@ def extract_gifti(input_files, roi_file, regressor_file, params):
     params : dict
         Parameter dictionary for extraction
     """
-
     # validate input file(s) and make output file before extraction
     out = _set_out_fname(input_files, params['out_dir'])
 
-    # set up extraction
     extractor = GiftiExtractor(
         lh_file=input_files[0],
         rh_file=input_files[1],
@@ -146,7 +174,6 @@ def extract_gifti(input_files, roi_file, regressor_file, params):
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
     
-    # extract timeseries and save
     extractor.extract()
     extractor.save(out, params['n_decimals'])
     

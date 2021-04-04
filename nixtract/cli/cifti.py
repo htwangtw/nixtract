@@ -9,18 +9,20 @@ from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
 from nixtract.extractors import CiftiExtractor
 
 def _cli_parser():
-    """Reads command line arguments and returns input specifications"""
+    """Reads CIFTI CLI arguments and returns input specifications combined with
+    those from the general CLI
+    """
     parser = argparse.ArgumentParser()
     # input files
     parser.add_argument('--input_files', nargs='+', type=str,
-                        help='One or more input CIfTI dtseries files '
+                        help='One or more input CIFTI dtseries files '
                              '(.dtseries.nii). Can also be a single string '
                              'with wildcards (*) to specify all files matching '
                              'the file pattern. If so, these files are '
                              'naturally sorted by file name prior to '
                              'extraction')
     parser.add_argument('--roi_file', type=str, metavar='roi_file', 
-                        help='CIfTI dlabel file (.dlabel.nii) with one or more '
+                        help='CIFTI dlabel file (.dlabel.nii) with one or more '
                              'labels')
     # other
     parser.add_argument('--as_vertices', default=False,
@@ -59,7 +61,7 @@ def _check_cifti_params(params):
 
 
 def extract_cifti(input_file, roi_file, regressor_file, params):
-    """Extract timeseries from a CIfTI image
+    """Extract timeseries from a CIFTI image
 
     Parameters
     ----------
@@ -89,8 +91,7 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
 
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
-    
-    # extract timeseries and save
+
     extractor.extract()
     out = out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
