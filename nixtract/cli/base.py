@@ -221,7 +221,7 @@ def replace_file_ext(fname):
     str
         _timeseries.tsv file to be used for output
     """
-    for ext in ['.nii', '.nii.gz', '.func.gii', '.dtseries.nii']:
+    for ext in ['.nii.gz', '.func.gii', '.dtseries.nii']:
         if fname.endswith(ext):
             return os.path.basename(fname).replace(ext, '_timeseries.tsv')
             

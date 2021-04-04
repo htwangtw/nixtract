@@ -14,17 +14,19 @@ from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
 from nixtract.extractors import NiftiExtractor
 
 def _cli_parser():
-    """Reads command line arguments and returns input specifications"""
+    """Reads NIFTI CLI arguments and returns input specifications combined with
+    those from the general CLI
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_files', nargs='+', type=str,
-                        help='One or more input NIfTI images (.nii.gz or .nii). '
+                        help='One or more input NIFTI images (.nii.gz only). '
                              'Can also be a single string with wildcards (*) '
                              'to specify all files matching the file pattern. '
                              'If so, these files are naturally sorted by file '
                              'name prior to extraction')
     parser.add_argument('--roi_file', type=str, metavar='roi_file', 
                         help='Parameter that defines the region(s) of interest. '
-                             'This can be 1) a file path to NIfTI image that is '
+                             'This can be 1) a file path to NIFTI image that is '
                              'an atlas of multiple regions or a binary mask of '
                              'one region, 2) a nilearn query string formatted as '
                              '`nilearn:<atlas-name>:<atlas-parameters> 3) a '
@@ -163,6 +165,9 @@ def _check_nifti_params(params):
         if not params['input_files']:
             raise ValueError('Missing input files. Check files')
 
+    if not all([i.endswith('.nii.gz') for i in params['input_files']]):
+        raise ValueError('input_files must be gzipped NIFTI images')
+
     if not params['roi_file']:
         raise ValueError('Missing roi_file input.')
     
@@ -186,7 +191,7 @@ def _check_nifti_params(params):
 
 
 def extract_nifti(input_file, roi_file, regressor_file, params):
-    """Extract timeseries from a NIfTI image
+    """Extract timeseries from a NIFTI image
 
     Parameters
     ----------
@@ -200,8 +205,6 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     params : dict
         Parameter dictionary for extraction
     """
-
-    # set up extraction
     extractor = NiftiExtractor(
         fname=input_file,
         roi_file=roi_file, 
@@ -223,7 +226,6 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
     
-    # extract timeseries and save
     extractor.extract()
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
