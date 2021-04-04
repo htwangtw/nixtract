@@ -18,7 +18,7 @@ connectome workbench as well.
 A very similar approach is used to check the `--as_vertcies` functionality, 
 where 1) all values in the timeseries should equal the label, and 2) the number
 of columns should equal the number of vertices with that label in the dlabel 
-file. 
+file. Binary masks for these tests are created in `setup_mock_data.py`.
 
 The Gordon atlas and Schaefer atlas (100 region, 7 networks) are used. 
 Importantly, the Schaefer atlas is also used to check the accuracy of internal 
