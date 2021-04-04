@@ -273,7 +273,7 @@ def run_extraction(extract_func, input_files, roi_file, params):
     else:
         args = zip(
             input_files,
-            roi_file,
+            repeat(roi_file),
             regressor_files, 
             repeat(params)
         )
