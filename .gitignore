@@ -5,5 +5,5 @@ __pycache__/
 nixtract.egg-info
 scratch/
 .pytest_cache/
-tests/data-dir
+tests/data/mock
 docs/ 
