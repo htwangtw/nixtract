@@ -1,9 +1,7 @@
 """Functions for command line interface
 """
 import argparse
-import sys
 import os
-import json
 import shutil
 
 from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
@@ -74,8 +72,6 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
     params : dict
         Parameter dictionary for extraction
     """
-
-    # set up extraction
     extractor = CiftiExtractor(
         fname=input_file, 
         roi_file=roi_file,
