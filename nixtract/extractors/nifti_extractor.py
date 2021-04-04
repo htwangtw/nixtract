@@ -14,11 +14,13 @@ from .base_extractor import BaseExtractor
 
 def _read_coords(roi_file):
     """Parse and validate coordinates from file"""
-
-    if not roi_file.endswith('.tsv'):
-        raise ValueError('Coordinate file must be a tab-separated .tsv file')
-
-    coords = pd.read_table(roi_file)
+    if roi_file.endswith('.tsv'):
+        coords = pd.read_table(roi_file)
+    elif roi_file.endswith('.csv'):
+        coords = pd.read_csv(roi_file)
+    else:
+        raise ValueError('Coordinate file must be a tab-separated .tsv file '
+                         'or a comma-separated .csv file')
     
     # validate columns
     columns = [x for x in coords.columns if x in ['x', 'y', 'z']]
@@ -62,7 +64,10 @@ def _get_spheres_from_masker(masker, ref_img):
 def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
 
-    if isinstance(roi_file, str) and roi_file.endswith('.tsv'):
+    if not isinstance(roi_file, str):
+        raise ValueError('roi_file must be a file name string')
+
+    if roi_file.endswith('.csv') or roi_file.endswith('.tsv'):
         roi = _read_coords(roi_file)
         n_rois = len(roi)
         print('  {} region(s) detected from coordinates'.format(n_rois))
@@ -72,7 +77,8 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
                           'to nilearn.input_data.NiftiSphereMasker default '
                           'of extracting from a single voxel')
         masker = NiftiSpheresMasker(roi, **kwargs)
-    else:
+    
+    elif roi_file.endswith('.nii.gz'):
         # remove args for NiftiSpheresMasker 
         if 'radius' in kwargs:
             kwargs.pop('radius')
@@ -80,7 +86,7 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
             kwargs.pop('allow_overlap')
     
         roi_img = image.load_img(roi_file)
-        n_rois = len(np.unique(roi_img.get_data())) - 1
+        n_rois = len(np.unique(roi_img.get_fdata())) - 1
         print('  {} region(s) detected from {}'.format(n_rois,
                                                        roi_img.get_filename()))
         if n_rois > 1:
@@ -96,6 +102,10 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
                 masker = NiftiLabelsMasker(roi_img, **kwargs)
         else:
             raise ValueError('No ROI detected; check ROI file')
+    
+    else:
+        raise ValueError('Invalid file type for roi_file. Must be one of: '
+                         '.nii.gz, .csv, .tsv')
     
     return masker, n_rois
 
