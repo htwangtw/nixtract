@@ -157,7 +157,6 @@ def handle_base_args(params):
         params['regressors'] = [params['regressors']]
 
     # make output dirs
-    os.makedirs(params['out_dir'], exist_ok=True)
     os.makedirs(os.path.join(params['out_dir'], 'nixtract_data'),
                 exist_ok=True)
 
