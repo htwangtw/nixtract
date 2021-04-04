@@ -1,4 +1,4 @@
-ROI Label,ROI Name,R,A,S
+ROI Label,ROI Name,x,y,z
 1,7Networks_LH_Vis_1,-26,-34,-18
 2,7Networks_LH_Vis_2,-26,-76,-14
 3,7Networks_LH_Vis_3,-18,-60,-6
