@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 from nilearn import signal
@@ -73,7 +72,8 @@ def mask_data(darray, roi, regressors=None, as_vertices=False,
         return _mask(x, roi, as_vertices)
     else:
         timeseries = _mask(x, roi, as_vertices)
-        return signal.clean(timeseries, confounds=regressors, **kwargs)
+        out = signal.clean(timeseries, confounds=regressors, **kwargs)
+        return out
 
 
 def label_timeseries(tseries, labels, as_vertices):

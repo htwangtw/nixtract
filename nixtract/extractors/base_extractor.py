@@ -81,7 +81,7 @@ class BaseExtractor(object):
             # list of regressor names
             try:
                 regs = pd.read_csv(regressor_file, sep='\t', 
-                                   usecols=regressors)
+                                   usecols=regressors).values
                 names = regressors
             except ValueError as e:
                 msg = 'Not all regressors are found in regressor file'
@@ -117,7 +117,6 @@ class BaseExtractor(object):
             Output file name
         """
         self.check_extracted()
-        print(n_decimals)
         float_format = f'%.{n_decimals}f' if n_decimals else None
         self.timeseries.to_csv(out, sep='\t', index=False, 
                                float_format=float_format)
