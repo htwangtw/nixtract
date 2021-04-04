@@ -21,6 +21,9 @@ setup(
                                     "tests"]),
     license='MIT',
     author='Dan Gale',
+    maintainer_email="d.gale@queensu.ca",
+    description=("A unified interface for timeseries extraction from different "
+                 "functional neuroimaging file types"),
     long_description=open('README.md').read(),
     url='https://github.com/danjgale/nixtract',
     python_requires='>=3.6.0',
@@ -28,7 +31,7 @@ setup(
         'numpy>=1.16.5',
         'pandas>=1.1.0',
         'nibabel>=3.2.0',
-        'nilearn>=0.5.0',
+        'nilearn>=0.6.0',
         'natsort>=7.1.1',
         'scipy>=1.5.0',
         'scikit-learn>=0.24.1',
@@ -43,5 +46,12 @@ setup(
             'nixtract-gifti=nixtract.cli.gifti:main',
             'nixtract-cifti=nixtract.cli.cifti:main'
             ]
-        }
+    },
+    classifiers=[
+        'Programming Language :: Python :: 3',
+        'Operating System :: OS Independent',
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Developers',
+        'Topic :: Scientific/Engineering'
+    ]
 )
