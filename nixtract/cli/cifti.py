@@ -104,7 +104,7 @@ def main():
     shutil.copy2(params['roi_file'], metadata_path)
 
     run_extraction(extract_cifti, params['input_files'], params['roi_file'], 
-                   params['regressor_files'], params)
+                   params)
 
 
 if __name__ == '__main__':

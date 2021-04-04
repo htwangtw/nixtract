@@ -239,7 +239,7 @@ def main():
 
     # setup and run extraction
     run_extraction(extract_nifti, params['input_files'], params['roi_file'], 
-                   params['regressor_files'], params)
+                   params)
 
 if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/nifti.py` should not be run directly. "

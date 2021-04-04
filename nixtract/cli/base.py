@@ -193,7 +193,6 @@ def make_param_file(params):
     str
         Path to which metadata is stored, including parameters.json
     """
-    # add in meta data
     versions = _get_package_versions()
 
     # export command-line call and parameters to a file
@@ -226,10 +225,22 @@ def replace_file_ext(fname):
             return os.path.basename(fname).replace(ext, '_timeseries.tsv')
             
 
-def run_extraction(extract_func, input_files, roi_file, regressor_files, 
-                   params):
-    """[summary]
+def run_extraction(extract_func, input_files, roi_file, params):
+    """Extract timeseries from input files
 
+    Extraction is determined by the `extract_func`, in which there is one
+    extraction function defined per file type, each defined in their respective
+    module (see `extract_func` parameter for each). These functions are roughly
+    the same, with extract_gifti being the biggest exception because it has to
+    handle left and/or right hemipsheres. 
+
+    Most of the extraction parameters are specified in `params`, including 
+    n_jobs, which `run_extraction` uses to parallelize extraction if specified.
+    Note that `input_files`, `roi_file`, and `regressor_files` should also all 
+    be in params; they are explictly in this function so that it can be 
+    generalizeable across file types (thanks to GIFTIs being the way they 
+    are...). 
+    
     Parameters
     ----------
     extract_func : nixtract.cli.nifti.extract_nifti, 
@@ -250,6 +261,7 @@ def run_extraction(extract_func, input_files, roi_file, regressor_files,
     params : dict
         Input parameter dictionary
     """
+    regressor_files = params['regressor_files']
     if regressor_files is None:
         regressor_files = [regressor_files] * len(input_files)
 
@@ -259,7 +271,6 @@ def run_extraction(extract_func, input_files, roi_file, regressor_files,
         for i, in_file in enumerate(input_files):
             extract_func(in_file, roi_file, regressor_files[i], params)
     else:
-        # repeat parameters are held constant for all parallelized iterations
         args = zip(
             input_files,
             roi_file,

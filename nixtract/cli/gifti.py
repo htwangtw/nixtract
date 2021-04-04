@@ -190,8 +190,7 @@ def main():
     # setup and run extraction
     input_files = list(zip(params['lh_files'], params['rh_files']))
     roi_files = (params['lh_roi_file'], params['rh_roi_file'])
-    run_extraction(extract_gifti, input_files, roi_files, 
-                   params['regressor_files'], params)
+    run_extraction(extract_gifti, input_files, roi_files, params)
 
 
 if __name__ == '__main__':
