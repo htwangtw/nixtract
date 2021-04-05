@@ -36,7 +36,7 @@ def _mask(darray, roi, as_vertices=False):
     else:
         timeseries = np.zeros((darray.shape[0], len(labels)))
         for i, l in enumerate(labels):
-            mask = np.where(roi == l, 1, 0).astype(bool)
+            mask = (roi.ravel() == l)
             timeseries[:, i] = darray[:, mask].mean(axis=1)
     
     return timeseries
