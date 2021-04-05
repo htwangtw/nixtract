@@ -3,6 +3,7 @@
 import argparse
 import os
 import shutil
+from nilearn.signal import clean
 
 from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
                                make_param_file, check_glob, run_extraction)
@@ -93,7 +94,7 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
         extractor.discard_scans(params['discard_scans'])
 
     extractor.extract()
-    out = out = os.path.join(params['out_dir'], replace_file_ext(input_file))
+    out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
     
 

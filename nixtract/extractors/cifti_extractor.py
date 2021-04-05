@@ -6,7 +6,6 @@ from .base_extractor import BaseExtractor
 from .utils import mask_data, label_timeseries
 
 
-
 def _check_cifti(fname):
     """Verify that file is read as a cifti"""
     img = nib.load(fname)
