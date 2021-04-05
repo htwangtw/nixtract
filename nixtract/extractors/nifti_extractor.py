@@ -23,13 +23,13 @@ def _read_coords(roi_file):
                          'or a comma-separated .csv file')
     
     # validate columns
-    columns = [x for x in coords.columns if x in ['x', 'y', 'z']]
-    if (len(columns) != 3) or (len(np.unique(columns)) != 3):
-        raise ValueError('Provided coordinates do not have 3 columns with '
-                         'names `x`, `y`, and `z`')
+    required_columns = ['x', 'y', 'z']
+    missing_columns = [i for i in required_columns if i not in coords.columns]
+    if len(missing_columns) != 0:
+        raise ValueError(f'roi_file is missing column headers {missing_columns}')
 
     # convert to list of lists for nilearn input
-    return coords.values.tolist()
+    return coords[required_columns].values.tolist()
 
 
 def _get_spheres_from_masker(masker, ref_img):
@@ -113,7 +113,7 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
 class NiftiExtractor(BaseExtractor):
     def __init__(self, fname, roi_file, labels=None, as_voxels=False, 
                  verbose=False, **kwargs):
-        """[summary]
+        """Extract timeseries from a NIFTI image
 
         Parameters
         ----------
@@ -125,7 +125,12 @@ class NiftiExtractor(BaseExtractor):
             or a binary mask for a single region. Or, a .tsv file containing
             central coordinates for each region. 
         labels : str, optional
-            [description], by default None
+            Label names for each region in roi_file, given in the exact same
+            ascending order. If None, a) numeric labels in roi_file will be 
+            used if roi_file is a single or multi-region atlas, b) rows in 
+            roi_file are enumerated (1-indexed) if roi_file is a .tsv file, or 
+            c) voxels are enumerated (1-indexed) if as_voxels is specified. By 
+            default None
         as_voxels : bool, optional
             Extract the individual voxel timeseries from a region. Only 
             possible when roi_file is a binary mask (single region), by 
@@ -157,13 +162,13 @@ class NiftiExtractor(BaseExtractor):
         self.check_extracted()
         
         if isinstance(self.masker, NiftiMasker):
-            return ['voxel {}'.format(int(i))
-                    for i in np.arange(self.data.shape[1]) + 1]
+            return ['voxel{}'.format(int(i))
+                    for i in np.arange(self.timeseries.shape[1]) + 1]
         elif isinstance(self.masker, NiftiLabelsMasker): 
             # get actual numerical labels used in image          
-            return ['roi {}'.format(int(i)) for i in self.masker.labels_]
+            return ['region{}'.format(int(i)) for i in self.masker.labels_]
         elif isinstance(self.masker, NiftiSpheresMasker):
-            return ['roi {}'.format(int(i)) 
+            return ['region{}'.format(int(i)) 
                     for i in np.arange(len(self.masker.seeds)) + 1]
 
     def discard_scans(self, n_scans):

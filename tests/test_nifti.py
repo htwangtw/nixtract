@@ -32,9 +32,11 @@ performed, which are some basic functionalities of `NiftiExtractor`.
 """
 import os
 import pytest
+import json
 import subprocess
 import numpy as np
 import nibabel as nib
+import pandas as pd
 
 from nixtract.extractors.nifti_extractor import _set_volume_masker
 from nilearn.input_data import (NiftiLabelsMasker, NiftiMasker, 
@@ -43,7 +45,6 @@ from nilearn.input_data import (NiftiLabelsMasker, NiftiMasker,
 
 def test_set_volume_masker(data_dir, mock_data):
 
-
     mask = os.path.join(mock_data, 'schaefer_LH_Vis_4.nii.gz')
     atlas = os.path.join(
         data_dir, 
@@ -51,7 +52,7 @@ def test_set_volume_masker(data_dir, mock_data):
     )
     coordinates = os.path.join(
         data_dir,
-        'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.Centroid_RAS.csv'
+        'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.Centroid_XYZ.tsv'
     )
 
     masker, n_rois = _set_volume_masker(mask, as_voxels=True)
@@ -71,35 +72,108 @@ def test_set_volume_masker(data_dir, mock_data):
     assert n_rois == 100
 
     
+def test_mask(mock_data, tmpdir):
+
+    roi_file = os.path.join(mock_data, 'schaefer_LH_Vis_4.nii.gz')
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
+
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file}")
+    subprocess.run(cmd.split())
+
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+    expected = np.full((10, 1), 4)
+    assert np.array_equal(actual.values, expected)
+    
+
+def test_as_voxels(mock_data, tmpdir):
+
+    roi_file = os.path.join(mock_data, 'schaefer_LH_Vis_4.nii.gz')
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
+
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file} --as_voxels")
+    subprocess.run(cmd.split())
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+
+    roi_array = nib.load(roi_file).get_fdata()
+    n_voxels = len(roi_array[roi_array == 4])
+
+    expected = np.full((10, n_voxels), fill_value=4)
+    assert np.array_equal(actual.values, expected)
+    
+
+def test_label_atlas(data_dir, mock_data, tmpdir):
+
+    roi_file = os.path.join(data_dir, 
+                            'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.nii.gz')
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
+
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file}")
+    subprocess.run(cmd.split())
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+
+    expected = np.tile(np.arange(1, 101), (10, 1))
+    assert np.array_equal(actual.values, expected)
 
 
-# def test_mask():
-#     pass
+def test_coord_atlas(data_dir, mock_data, tmpdir):
+
+    schaef = 'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.Centroid_XYZ.tsv'
+    roi_file = os.path.join(data_dir, schaef)
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
+
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file}")
+    subprocess.run(cmd.split())
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+
+    expected = np.tile(np.arange(1, 101), (10, 1))
+    assert np.array_equal(actual.values, expected)
 
 
-# def test_mask_voxels():
-#     pass
+def test_labels(data_dir, mock_data, tmpdir, nifti_label_config):
+    
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
+
+    config_file = os.path.join(tmpdir, 'config.json')
+    with open(config_file, 'w') as fp:
+        json.dump(nifti_label_config, fp)
+
+    expected = nifti_label_config['labels']
+    
+    # test with coordinates
+    coords = 'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.Centroid_XYZ.tsv'
+    roi_file = os.path.join(data_dir, coords)
+    
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file} -c {config_file}")
+    subprocess.run(cmd.split())
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+    assert np.array_equal(actual.columns, expected)
+
+    # test with atlas
+    atlas = 'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.nii.gz'
+    roi_file = os.path.join(data_dir, atlas)
+    
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file} -c {config_file}")
+    subprocess.run(cmd.split())
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+    assert np.array_equal(actual.columns, expected)
 
 
-# def test_label_atlas():
-#     pass
+def test_discard_scans(data_dir, mock_data, tmpdir):
+    
+    roi_file = os.path.join(data_dir, 
+                            'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.nii.gz')
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
 
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file} --discard_scans 3")
+    subprocess.run(cmd.split())
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
 
-# def test_coord_atlas():
-#     pass
-
-
-# def test_gifti_label():
-#     pass
-
-
-# def test_annot_mask():
-#     pass
-
-
-# def test_discard_scans():
-#     pass
-
-
-# def test_regressors():
-#     pass
+    expected = np.tile(np.arange(1, 101), (7, 1))
+    assert np.array_equal(actual.values, expected)

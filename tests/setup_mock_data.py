@@ -43,7 +43,7 @@ def atlas_to_mask(img, label, out):
     """
     img = nib.load(img)
     arr = img.get_fdata().copy()
-    mask = np.where(arr == label, 1, 0)
+    mask = np.where(arr == label, label, 0)
     out_img = nib.Nifti1Image(mask, affine=img.affine)
     out_img.to_filename(out)
     return out
