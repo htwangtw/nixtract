@@ -1,6 +1,7 @@
 
 import os
 from datetime import datetime
+import numpy as np
 import pandas as pd
 import load_confounds
 
@@ -42,6 +43,12 @@ class BaseExtractor(object):
     def set_regressors(self, regressor_file, regressors=None):
         """Set regressors to be used with extraction
 
+        NaN imputation is done by default because nilearn.signal.clean will 
+        crash if NaNs are present. Any initial NaNs (derivatives, 
+        framewise_displacement, etc) are replaced with the value in subsequent 
+        row, which is the load_confound approach. If initial scans are to be 
+        discarded then this is a non-issue. 
+
         Parameters
         ----------
         regressor_file : str
@@ -67,22 +74,25 @@ class BaseExtractor(object):
 
         if regressors is None:
             # use all regressors from file
-            regs, names = pd.read_csv(regressor_file, sep=r'\t')
+            regs = pd.read_table(regressor_file)
+            names = regs.columns
+            regs = regs.values
         elif len(regressors) == 1 and (regressors[0] in strategies):
             # predefined strategy
             denoiser = eval('load_confounds.{}()'.format(regressors[0]))
             regs, names = _load_from_strategy(denoiser, regressor_file)
         elif set(regressors) <= set(flexible_strategies):
             # flexible strategy
-            denoiser = load_confounds.Confounds(strategy=regressors)
+            denoiser = load_confounds.Confounds(strategy=regressors, 
+                                                demean=False)
             regs, names = _load_from_strategy(denoiser, regressor_file)
         elif all([x not in strategies + flexible_strategies 
                   for x in regressors]):
             # list of regressor names
             try:
-                regs = pd.read_csv(regressor_file, sep='\t', 
-                                   usecols=regressors).values
-                names = regressors
+                regs = pd.read_table(regressor_file, usecols=regressors)
+                names = regs.columns
+                regs = regs.values
             except ValueError as e:
                 msg = 'Not all regressors are found in regressor file'
                 raise ValueError(msg) from e
@@ -95,6 +105,10 @@ class BaseExtractor(object):
         self.regressor_file = regressor_file
         self.regressor_names = names
         self.regressor_array = regs
+
+        # impute initial NaN using load_confounds approach
+        mask = np.isnan(self.regressor_array[0, :])
+        self.regressor_array[0, mask] = self.regressor_array[1, mask]
 
     def check_extracted(self):
         """Check is extraction has been performed
