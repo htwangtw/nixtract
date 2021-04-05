@@ -42,15 +42,42 @@ def test_annot(data_dir, mock_data, tmpdir):
     lh_func = os.path.join(mock_data, 'schaefer_hemi-L.func.gii')
     rh_func = os.path.join(mock_data, 'schaefer_hemi-R.func.gii')
 
+    # BOTH HEMISPHERES
     cmd = (f"nixtract-gifti {tmpdir} --lh_files {lh_func} --rh_files {rh_func} "
            f"--lh_roi_file {lh_annot} --rh_roi_file {rh_annot}")
     subprocess.run(cmd.split())
 
-    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_hemi-LR_timeseries.tsv'))
+    tseries = os.path.join(tmpdir, 'schaefer_hemi-LR_timeseries.tsv')
+    assert os.path.exists(tseries)
+    actual = pd.read_table(tseries)
+
     expected_hemi = np.tile(np.arange(1, 51), (10, 1))
     expected = np.concatenate([expected_hemi, expected_hemi], axis=1)
-
     assert np.array_equal(actual.values, expected)
+
+    # LEFT HEMISPHERE
+    cmd = (f"nixtract-gifti {tmpdir} --lh_files {lh_func} "
+            f"--lh_roi_file {lh_annot}")
+    subprocess.run(cmd.split())
+
+    tseries = os.path.join(tmpdir, 'schaefer_hemi-L_timeseries.tsv')
+    assert os.path.exists(tseries)
+    actual = pd.read_table(tseries)
+
+    expected_hemi = np.tile(np.arange(1, 51), (10, 1))
+    assert np.array_equal(actual.values, expected_hemi)
+
+    # RIGHT HEMISPHERE
+    cmd = (f"nixtract-gifti {tmpdir} --rh_files {rh_func} "
+            f"--rh_roi_file {rh_annot}")
+    subprocess.run(cmd.split())
+
+    tseries = os.path.join(tmpdir, 'schaefer_hemi-R_timeseries.tsv')
+    assert os.path.exists(tseries)
+    actual = pd.read_table(tseries)
+
+    expected_hemi = np.tile(np.arange(1, 51), (10, 1))
+    assert np.array_equal(actual.values, expected_hemi)
 
 
 def test_gifti_label(mock_data, tmpdir):
@@ -61,15 +88,42 @@ def test_gifti_label(mock_data, tmpdir):
     lh_func = os.path.join(mock_data, 'schaefer_hemi-L.func.gii')
     rh_func = os.path.join(mock_data, 'schaefer_hemi-R.func.gii')
 
+    # BOTH HEMISPHERES
     cmd = (f"nixtract-gifti {tmpdir} --lh_files {lh_func} --rh_files {rh_func} "
            f"--lh_roi_file {lh_label} --rh_roi_file {rh_label}")
     subprocess.run(cmd.split())
 
-    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_hemi-LR_timeseries.tsv'))
+    tseries = os.path.join(tmpdir, 'schaefer_hemi-LR_timeseries.tsv')
+    assert os.path.exists(tseries)
+    actual = pd.read_table(tseries)
+
     expected_hemi = np.tile(np.arange(1, 51), (10, 1))
     expected = np.concatenate([expected_hemi, expected_hemi], axis=1)
-
     assert np.array_equal(actual.values, expected)
+
+    # LEFT HEMISPHERE
+    cmd = (f"nixtract-gifti {tmpdir} --lh_files {lh_func} "
+            f"--lh_roi_file {lh_label}")
+    subprocess.run(cmd.split())
+
+    tseries = os.path.join(tmpdir, 'schaefer_hemi-L_timeseries.tsv')
+    assert os.path.exists(tseries)
+    actual = pd.read_table(tseries)
+
+    expected_hemi = np.tile(np.arange(1, 51), (10, 1))
+    assert np.array_equal(actual.values, expected_hemi)
+
+    # RIGHT HEMISPHERE
+    cmd = (f"nixtract-gifti {tmpdir} --rh_files {rh_func} "
+            f"--rh_roi_file {rh_label}")
+    subprocess.run(cmd.split())
+
+    tseries = os.path.join(tmpdir, 'schaefer_hemi-R_timeseries.tsv')
+    assert os.path.exists(tseries)
+    actual = pd.read_table(tseries)
+
+    expected_hemi = np.tile(np.arange(1, 51), (10, 1))
+    assert np.array_equal(actual.values, expected_hemi)
 
 
 # def test_annot_mask():
