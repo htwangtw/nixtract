@@ -9,8 +9,8 @@ from .utils import mask_data, label_timeseries
 
 
 def _check_labels(darray, labels, fname):
+    """Verify that labels are the same as what appears in the vertices"""
     detected_labels = np.unique(darray)
-
     n_detected = len(detected_labels)
     n_labels = len(labels)
 
@@ -85,9 +85,9 @@ def _load_hem(in_file, roi_file):
         return None, None, None, loaded
 
 
-def drop_zeros(tseries, labels):
-
-    if 0 in labels.keys():
+def drop_zeros(tseries, labels, as_vertices):
+    """Drop extracted data from label 0 if present"""
+    if (0 in labels.keys()) and not as_vertices:
         zero_column = labels[0]
         # drop first column 
         return tseries.drop(zero_column, axis=1)
@@ -198,7 +198,8 @@ class GiftiExtractor(BaseExtractor):
             lh_tseries = label_timeseries(lh_tseries, self.lh_labels.values(), 
                                           self.as_vertices)
             if self.drop_zero_label:
-                lh_tseries = drop_zeros(lh_tseries, self.lh_labels)
+                lh_tseries = drop_zeros(lh_tseries, self.lh_labels, 
+                                        self.as_vertices)
             
         
         if self._rh:
@@ -209,7 +210,8 @@ class GiftiExtractor(BaseExtractor):
             rh_tseries = label_timeseries(rh_tseries, self.rh_labels.values(), 
                                              self.as_vertices)
             if self.drop_zero_label:
-                rh_tseries = drop_zeros(rh_tseries, self.rh_labels)
+                rh_tseries = drop_zeros(rh_tseries, self.rh_labels, 
+                                        self.as_vertices)
 
         if self._lh and self._rh:
             self.timeseries = _combine_timeseries(lh_tseries, rh_tseries)
