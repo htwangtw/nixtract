@@ -201,7 +201,6 @@ class GiftiExtractor(BaseExtractor):
                 lh_tseries = drop_zeros(lh_tseries, self.lh_labels, 
                                         self.as_vertices)
             
-        
         if self._rh:
             self.show_extract_msg(self.rh_file)
             rh_tseries = mask_data(self.rh_darray.T, self.rh_roi, 
