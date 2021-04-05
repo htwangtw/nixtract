@@ -31,7 +31,7 @@ setup(
         'numpy>=1.16.5',
         'pandas>=1.1.0',
         'nibabel>=3.2.0',
-        'nilearn>=0.6.0',
+        'nilearn>=0.7.1',
         'natsort>=7.1.1',
         'scipy>=1.5.0',
         'scikit-learn>=0.24.1',
