@@ -8,16 +8,37 @@ from .base_extractor import BaseExtractor
 from .utils import mask_data, label_timeseries
 
 
+def _check_labels(darray, labels, fname):
+    detected_labels = np.unique(darray)
+
+    n_detected = len(detected_labels)
+    n_labels = len(labels)
+
+    if n_detected > n_labels:
+        raise ValueError(f'{fname} label table contains fewer labels '
+                         f'({n_labels}) than detected labels ({n_detected}) '
+                         ' in vertices')
+    elif n_detected < n_labels:
+        raise ValueError(f'{fname} label table contains more labels '
+                         f'({n_labels}) than detected labels ({n_detected}) '
+                         ' in vertices')
+    else:
+        return labels
+
+
 def _read_annot(fname):
     """Safely read a .annot file and return the vertices + labels"""
     try:
         annot = nib.freesurfer.read_annot(fname)
-        darray = annot[0]
-        labels = np.array(annot[2], dtype=np.str)
-        return darray, labels
     except ValueError:
-        raise ValueError('Invalid .annot file')
+        raise ValueError(f'Cannot read {fname}')
 
+    darray = annot[0]
+    labels = np.array(annot[2], dtype=np.str)
+    labels = _check_labels(darray, labels, fname)
+    labels = dict(zip(np.unique(darray), labels))
+    return darray, labels
+    
 
 def _read_gifti_label(fname):
     """Safely read a func.gii file"""
@@ -31,6 +52,8 @@ def _read_gifti_label(fname):
     labels = img.labeltable.get_labels_as_dict()
     if not labels:
         raise ValueError(f'Empty label table in {fname}')
+
+    labels = _check_labels(darray, labels, fname)
     return darray, labels
 
 
@@ -38,10 +61,10 @@ def _load_gifti_roi(fname):
     """Only read acceptable roi files"""
     if fname.endswith('.annot'):
         darray, labels = _read_annot(fname)
-    elif fname.endswith('.gii'):
+    elif fname.endswith('.label.gii'):
         darray, labels = _read_gifti_label(fname)
     else:
-        raise ValueError(f'{fname} must be a valid .annot or .gii file')
+        raise ValueError(f'{fname} must be a valid .annot or .label.gii file')
     return darray, labels
 
 
@@ -58,8 +81,19 @@ def _load_hem(in_file, roi_file):
         
         return in_array, roi_darray, labels, loaded
     else:
-        return None, None, None, False
+        loaded = False
+        return None, None, None, loaded
 
+
+def drop_zeros(tseries, labels):
+
+    if 0 in labels.keys():
+        zero_column = labels[0]
+        # drop first column 
+        return tseries.drop(zero_column, axis=1)
+    else:
+        return tseries
+    
 
 def _combine_timeseries(lh, rh):
     """Combine hemispheres into a single timeseries table"""
@@ -75,7 +109,7 @@ def _combine_timeseries(lh, rh):
 class GiftiExtractor(BaseExtractor):
     def __init__(self, lh_file=None, rh_file=None, lh_roi_file=None, 
                  rh_roi_file=None,  as_vertices=False, pre_clean=False, 
-                 verbose=False, **kwargs):
+                 verbose=False, drop_zero_label=True, **kwargs):
         """Gifti extraction class. 
 
         Either left, right or both hemispheres can be provided. To use a 
@@ -132,6 +166,7 @@ class GiftiExtractor(BaseExtractor):
         self.as_vertices = as_vertices
         self.pre_clean = pre_clean
         self.verbose = verbose
+        self.drop_zero_label = drop_zero_label
         self._clean_kwargs = kwargs
 
         self.regressor_names = None
@@ -160,16 +195,21 @@ class GiftiExtractor(BaseExtractor):
             lh_tseries = mask_data(self.lh_darray.T, self.lh_roi, 
                                    self.regressor_array, self.as_vertices, 
                                    self.pre_clean, **self._clean_kwargs)
-            lh_tseries = label_timeseries(lh_tseries, self.lh_labels, 
-                                             self.as_vertices)
+            lh_tseries = label_timeseries(lh_tseries, self.lh_labels.values(), 
+                                          self.as_vertices)
+            if self.drop_zero_label:
+                lh_tseries = drop_zeros(lh_tseries, self.lh_labels)
+            
         
         if self._rh:
             self.show_extract_msg(self.rh_file)
             rh_tseries = mask_data(self.rh_darray.T, self.rh_roi, 
                                    self.regressor_array, self.as_vertices, 
                                    self.pre_clean, **self._clean_kwargs)
-            rh_tseries = label_timeseries(rh_tseries, self.rh_labels, 
+            rh_tseries = label_timeseries(rh_tseries, self.rh_labels.values(), 
                                              self.as_vertices)
+            if self.drop_zero_label:
+                rh_tseries = drop_zeros(rh_tseries, self.rh_labels)
 
         if self._lh and self._rh:
             self.timeseries = _combine_timeseries(lh_tseries, rh_tseries)
