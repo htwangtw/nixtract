@@ -1,6 +1,7 @@
 import os
 import pytest
 import subprocess
+import pandas as pd
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def mock_data(rootdir, data_dir):
 @pytest.fixture
 def basic_regressor_config(data_dir):
     config = {
-        'regressor_files': [os.path.join(data_dir, 'example_regressors.tsv')],
+        'regressor_files': os.path.join(data_dir, 'example_regressors.tsv'),
         'regressors': [
             'trans_x',
             'trans_y',
@@ -40,5 +41,15 @@ def basic_regressor_config(data_dir):
             'rot_y',
             'rot_z'
         ]
+    }
+    return config
+
+@pytest.fixture
+def nifti_label_config(data_dir):
+    schaef = 'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.Centroid_XYZ.tsv'
+    labels = pd.read_table(os.path.join(data_dir, schaef), 
+                           usecols=['ROI Name'])
+    config = {
+        'labels': labels['ROI Name'].tolist()
     }
     return config
