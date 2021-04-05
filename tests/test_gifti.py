@@ -303,6 +303,7 @@ def test_regressors(mock_data, tmpdir, basic_regressor_config):
     lh_func = os.path.join(mock_data, 'schaefer_hemi-L.func.gii')
     rh_func = os.path.join(mock_data, 'schaefer_hemi-R.func.gii')
 
+    # check will all scans
     cmd = (f"nixtract-gifti {tmpdir} --lh_files {lh_func} --rh_files {rh_func} "
            f"--lh_roi_file {lh_label} --rh_roi_file {rh_label} "
            f"-c {config_file}")
@@ -318,7 +319,8 @@ def test_regressors(mock_data, tmpdir, basic_regressor_config):
     regressors = pd.read_table(basic_regressor_config['regressor_files'], 
                                usecols=basic_regressor_config['regressors'])
     expected = signal.clean(expected, confounds=regressors, standardize=False, 
-                            detrend=False, t_r=None)
+                            detrend=False)
+    assert np.allclose(actual, expected)
 
     # check with discard scans
     cmd = (f"nixtract-gifti {tmpdir} --lh_files {lh_func} --rh_files {rh_func} "
@@ -332,9 +334,7 @@ def test_regressors(mock_data, tmpdir, basic_regressor_config):
 
     expected_hemi = np.tile(np.arange(1, 51), (7, 1))
     expected = np.concatenate([expected_hemi, expected_hemi], axis=1)
-    
-    regressors = regressors.iloc[3:, :]
+    regressors = regressors.values[3:, :]
     expected = signal.clean(expected, confounds=regressors, standardize=False, 
-                            detrend=False, t_r=None)
-
+                            detrend=False)
     assert np.allclose(actual, expected)

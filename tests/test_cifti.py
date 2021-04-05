@@ -37,7 +37,8 @@ import numpy as np
 import pandas as pd
 import nibabel as nib
 from nilearn import signal
-import pytest
+import nilearn
+from sklearn.preprocessing import scale
 
 def test_aligned_extraction(data_dir, mock_data, tmpdir):
 
@@ -161,14 +162,15 @@ def test_regressors(data_dir, mock_data, basic_regressor_config, tmpdir):
     cmd = (f"nixtract-cifti {tmpdir} --input_files {dtseries} "
            f"--roi_file {roi_file}  -c {config_file}")
     subprocess.run(cmd.split())
-    actual = pd.read_table(os.path.join(tmpdir, 'gordon_timeseries.tsv'))
+    actual = pd.read_table(os.path.join(tmpdir, 'gordon_timeseries.tsv')).values
 
     # expected data (all scans = 10)
     regressors = pd.read_table(basic_regressor_config['regressor_files'], 
                                usecols=basic_regressor_config['regressors'])
-    expected = np.tile(np.arange(1, 353), (10, 1)).astype(np.float)
+    expected = np.tile(np.arange(1, 353), (10, 1))
     expected = signal.clean(expected, confounds=regressors, standardize=False, 
-                            detrend=False, t_r=None)
+                            detrend=False)
+    assert np.allclose(actual, expected)
 
     # actual data (discard 3 scans)
     cmd = (f"nixtract-cifti {tmpdir} --input_files {dtseries} "
@@ -181,9 +183,9 @@ def test_regressors(data_dir, mock_data, basic_regressor_config, tmpdir):
                                usecols=basic_regressor_config['regressors'])
     # discard first three rows to match up with discard scans
     regressors = regressors.values[3:, :]
-    expected = np.tile(np.arange(1, 353), (7, 1)).astype(np.float)
+    expected = np.tile(np.arange(1, 353), (7, 1))
     expected = signal.clean(expected, confounds=regressors, standardize=False, 
-                            detrend=False, t_r=None)
+                            detrend=False)
 
     assert np.allclose(actual.values, expected)
 
