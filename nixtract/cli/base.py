@@ -143,7 +143,10 @@ def handle_base_args(params):
     # read config file if available -- overwrites CLI
     if params['config'] is not None:
         with open(params['config'], 'rb') as f:
-            conf_params = json.load(f)
+            try:
+                conf_params = json.load(f)
+            except json.decoder.JSONDecodeError as e:
+                raise ValueError('Invalid .json configuration file') from e
         params = merge_params(params, conf_params)
     params.pop('config')
 
@@ -263,6 +266,9 @@ def run_extraction(extract_func, input_files, roi_file, params):
     regressor_files = params['regressor_files']
     if regressor_files is None:
         regressor_files = [regressor_files] * len(input_files)
+    
+    if len(regressor_files) != len(input_files):
+        raise ValueError('Number of regressor files do not equal number of input files')
 
     n_jobs = params['n_jobs']
     # no parallelization
