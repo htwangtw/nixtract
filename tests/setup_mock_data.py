@@ -128,6 +128,31 @@ def annot_to_gifti(annot_file, out):
     img.to_filename(out)
     return out
 
+
+def make_binary_gifti(img, label, out):
+
+    img = nib.load(img)
+    arr = img.agg_data().ravel()
+    labeltable = img.labeltable.get_labels_as_dict()
+
+    mask = np.where(arr == label, label, 0)
+
+    darray = nib.gifti.GiftiDataArray(mask, intent='NIFTI_INTENT_LABEL',
+                                      datatype='NIFTI_TYPE_INT32')
+
+    # get only the labels that appear in the mask
+    mask_labels = np.unique(mask)
+    retained_labels = [x for x in img.labeltable.labels if x.key in mask_labels]
+
+    new_labels = nib.gifti.GiftiLabelTable()
+    for i in retained_labels:
+        new_labels.labels.append(i)
+
+    img = nib.GiftiImage(darrays=[darray], labeltable=new_labels)
+    img.to_filename(out)
+    return out
+
+
 ## CIFTI
 
 def dlabel_to_dtseries(dlabel, out, n=10):
@@ -283,10 +308,19 @@ def main():
     schaefer_LH_Vis_4_annot = 'data/mock/schaefer_LH_Vis_4.annot'
     make_binary_annot(lh_annot, 4, schaefer_LH_Vis_4_annot)
 
+    schaefer_RH_Vis_4_annot = 'data/mock/schaefer_RH_Vis_4.annot'
+    make_binary_annot(rh_annot, 4, schaefer_RH_Vis_4_annot)
+
     lh_label = 'data/mock/schaefer_hemi-L.label.gii'
     annot_to_gifti(lh_annot, lh_label)
     rh_label = 'data/mock/schaefer_hemi-R.label.gii'
     annot_to_gifti(rh_annot, rh_label)
+
+    schaefer_LH_Vis_4_label = 'data/mock/schaefer_LH_Vis_4.label.gii'
+    make_binary_gifti(lh_label, 4, schaefer_LH_Vis_4_label)
+
+    schaefer_RH_Vis_4_label = 'data/mock/schaefer_RH_Vis_4.label.gii'
+    make_binary_gifti(rh_label, 4, schaefer_RH_Vis_4_label)
 
     lh_func = 'data/mock/schaefer_hemi-L.func.gii'
     annot_to_func(lh_annot, lh_func)
