@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 import nibabel as nib
 from nilearn import signal
+import pytest
 
 def test_aligned_extraction(data_dir, mock_data, tmpdir):
 
@@ -163,7 +164,7 @@ def test_regressors(data_dir, mock_data, basic_regressor_config, tmpdir):
     actual = pd.read_table(os.path.join(tmpdir, 'gordon_timeseries.tsv'))
 
     # expected data (all scans = 10)
-    regressors = pd.read_table(basic_regressor_config['regressor_files'][0], 
+    regressors = pd.read_table(basic_regressor_config['regressor_files'], 
                                usecols=basic_regressor_config['regressors'])
     expected = np.tile(np.arange(1, 353), (10, 1)).astype(np.float)
     expected = signal.clean(expected, confounds=regressors, standardize=False, 
@@ -176,7 +177,7 @@ def test_regressors(data_dir, mock_data, basic_regressor_config, tmpdir):
     actual = pd.read_table(os.path.join(tmpdir, 'gordon_timeseries.tsv'))
 
     # expected data (discard 3 scans)
-    regressors = pd.read_table(basic_regressor_config['regressor_files'][0], 
+    regressors = pd.read_table(basic_regressor_config['regressor_files'], 
                                usecols=basic_regressor_config['regressors'])
     # discard first three rows to match up with discard scans
     regressors = regressors.values[3:, :]
