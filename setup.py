@@ -44,7 +44,8 @@ setup(
         'console_scripts': [
             'nixtract-nifti=nixtract.cli.nifti:main',
             'nixtract-gifti=nixtract.cli.gifti:main',
-            'nixtract-cifti=nixtract.cli.cifti:main'
+            'nixtract-cifti=nixtract.cli.cifti:main',
+            'nixtract-qc=nixtract.cli.qc:main'
             ]
     },
     classifiers=[
