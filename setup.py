@@ -35,7 +35,8 @@ setup(
         'natsort>=7.1.1',
         'scipy>=1.5.0',
         'scikit-learn>=0.24.1',
-        'load_confounds'
+        'load_confounds',
+        'bctpy>=0.5.2'
     ],
     tests_require=test_deps,
     extras_require=extras,
