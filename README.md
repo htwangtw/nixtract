@@ -19,6 +19,7 @@ usage: nixtract-nifti [-h] [--input_files INPUT_FILES [INPUT_FILES ...]]
                       [--roi_file ROI_FILE] [--mask_img MASK_IMG]
                       [--labels LABELS [LABELS ...]] [--as_voxels]
                       [--radius radius] [--allow_overlap]
+                      [--smoothing_fwhm SMOOTHING_FWHM]
                       [--regressor_files REGRESSOR_FILES [REGRESSOR_FILES ...]]
                       [--regressors REGRESSORS [REGRESSORS ...]]
                       [--standardize] [--t_r T_R] [--high_pass HIGH_PASS]
@@ -73,6 +74,9 @@ optional arguments:
                         default)
   --allow_overlap       Permit overlapping spheres when coordinates are
                         provided to `roi_file` and `radius` is provided
+  --smoothing_fwhm SMOOTHING_FWHM
+                        Smoothing kernel FWHM (in mm) if spatial smoothing is
+                        desired.
   --regressor_files REGRESSOR_FILES [REGRESSOR_FILES ...]
                         One or more tab-separated files with regressors in
                         each column. The number of files must match the number
@@ -112,7 +116,7 @@ optional arguments:
                         desired. Default: 1 (serial processing)
   --n_decimals N_DECIMALS
                         Specify the number of decimals for output timeseries
-                        files. Fewer decimals are recommendedfor reducing
+                        files. Fewer decimals are recommended for reducing
                         disk-space, particularly for large extractions
   -c CONFIG, --config CONFIG
                         A configuration .json file to pass parameters This
@@ -215,7 +219,7 @@ optional arguments:
                         desired. Default: 1 (serial processing)
   --n_decimals N_DECIMALS
                         Specify the number of decimals for output timeseries
-                        files. Fewer decimals are recommendedfor reducing
+                        files. Fewer decimals are recommended for reducing
                         disk-space, particularly for large extractions
   -c CONFIG, --config CONFIG
                         A configuration .json file to pass parameters This
@@ -305,7 +309,7 @@ optional arguments:
                         desired. Default: 1 (serial processing)
   --n_decimals N_DECIMALS
                         Specify the number of decimals for output timeseries
-                        files. Fewer decimals are recommendedfor reducing
+                        files. Fewer decimals are recommended for reducing
                         disk-space, particularly for large extractions
   -c CONFIG, --config CONFIG
                         A configuration .json file to pass parameters This
@@ -340,3 +344,5 @@ Where `config.json` is:
 }
 ```
 This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant. Therefore, constants across subjects can be stored in the project's configuration file.
+
+Configuration templates for each CLI are in `resources/config-templates`.  
