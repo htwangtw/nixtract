@@ -74,7 +74,7 @@ def base_cli(parser):
                              'desired. Default: 1 (serial processing)')
     parser.add_argument('--n_decimals', type=int, 
                         help='Specify the number of decimals for output '
-                             'timeseries files. Fewer decimals are recommended'
+                             'timeseries files. Fewer decimals are recommended '
                              'for reducing disk-space, particularly for large '
                              'extractions')
     parser.add_argument('-c', '--config', type=str.lower,

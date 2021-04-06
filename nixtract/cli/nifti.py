@@ -64,7 +64,10 @@ def _cli_parser():
                              '(nilearn default)')
     parser.add_argument('--allow_overlap', action='store_true', default=False,
                         help='Permit overlapping spheres when coordinates are '
-                             'provided to `roi_file` and `radius` is provided')                             
+                             'provided to `roi_file` and `radius` is provided')
+    parser.add_argument('--smoothing_fwhm', type=float,
+                        help='Smoothing kernel FWHM (in mm) if spatial smoothing '
+                             'is desired.')
     parser = base_cli(parser)
     return parser.parse_args()
 
@@ -218,7 +221,8 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
         t_r=params['t_r'], 
         high_pass=params['high_pass'], 
         low_pass=params['low_pass'], 
-        detrend=params['detrend']
+        detrend=params['detrend'],
+        smoothing_fwhm=params['smoothing_fwhm']
     )
     if regressor_file is not None:
         extractor.set_regressors(regressor_file, params['regressors'])
