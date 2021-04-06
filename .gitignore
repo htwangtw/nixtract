@@ -2,8 +2,8 @@ __pycache__/
 .DS_Store
 .vscode/
 .eggs/
-niimasker.egg-info
-playground/
+nixtract.egg-info
+scratch/
 .pytest_cache/
-tests/data-dir
+tests/data/mock
 docs/ 

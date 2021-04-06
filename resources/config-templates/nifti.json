@@ -1,0 +1,21 @@
+{
+  "input_files": [],
+  "roi_file": "",
+  "mask_img": null,
+  "labels": [],
+  "as_voxels": false,
+  "radius": null,
+  "allow_overlap": false,
+  "smoothing_fwhm": null,
+  "regressor_files": null,
+  "regressors": [],
+  "standardize": false,
+  "t_r": null,
+  "high_pass": null,
+  "low_pass": null,
+  "detrend": false,
+  "discard_scans": null,
+  "n_jobs": 1,
+  "n_decimals": null,
+  "verbose": false
+}

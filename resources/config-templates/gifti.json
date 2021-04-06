@@ -1,0 +1,19 @@
+{
+  "lh_files": [],
+  "rh_files": [],
+  "lh_roi_file": "",
+  "rh_roi_file": "",
+  "as_vertices": false,
+  "denoise-pre-extract": false,
+  "regressor_files": null,
+  "regressors": [],
+  "standardize": false,
+  "t_r": null,
+  "high_pass": null,
+  "low_pass": null,
+  "detrend": false,
+  "discard_scans": null,
+  "n_jobs": 1,
+  "n_decimals": null,
+  "verbose": false
+}
