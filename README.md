@@ -4,7 +4,7 @@
   <img src="resources/logo.png" alt="logo" width="500"/>
 </p>
 
-`nixtract` (**N**euro**I**maging e**XTRACT**ion) is a collection of simple command-line tools that provide a decently unified interface to extract and process timeseries data from NIfTI, GIfTI, and CIfTI neuroimaging files. 
+`nixtract` (**N**euro**I**maging e**XTRACT**ion) is a collection of simple command-line tools that provide a decently unified interface to extract and process timeseries data from NIFTI, GIFTI, and CIFTI neuroimaging files. 
 
 The primary goal of `nixtract` is to provide the user with ready-to-use timeseries data for a variety of fMRI analyses. `nixtract` can extract the mean timeseries for each region in a provided atlas, or `nixtract` can also extract the timeseries of individual voxels/vertices within a specified region. These timeseries can be flexibly denoised using temporal filtering/detrending, spatial smoothing, and confound regression, thus providing the user fully processed timeseries for subsequent analysis.   
 
@@ -12,12 +12,12 @@ Nixtract has a CLI for each file type, as overviewed below:
 
 ## NIfTIs
 
-Data can be extract from NIfTI (`.nii` or `.nii.gz`) data using `nixtract-nifti`:
+Data can be extract from NIFTI (`.nii` or `.nii.gz`) data using `nixtract-nifti`:
 
 ```
 usage: nixtract-nifti [-h] [--input_files INPUT_FILES [INPUT_FILES ...]]
-                      [--roi_file roi_file] [--mask_img mask_img]
-                      [--labels labels [labels ...]] [--as_voxels]
+                      [--roi_file ROI_FILE] [--mask_img MASK_IMG]
+                      [--labels LABELS [LABELS ...]] [--as_voxels]
                       [--radius radius] [--allow_overlap]
                       [--regressor_files REGRESSOR_FILES [REGRESSOR_FILES ...]]
                       [--regressors REGRESSORS [REGRESSORS ...]]
@@ -34,13 +34,13 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --input_files INPUT_FILES [INPUT_FILES ...]
-                        One or more input NIfTI images (.nii.gz or .nii). Can
+                        One or more input NIFTI images (.nii.gz only). Can
                         also be a single string with wildcards (*) to specify
                         all files matching the file pattern. If so, these
                         files are naturally sorted by file name prior to
                         extraction
-  --roi_file roi_file   Parameter that defines the region(s) of interest. This
-                        can be 1) a file path to NIfTI image that is an atlas
+  --roi_file ROI_FILE   Parameter that defines the region(s) of interest. This
+                        can be 1) a file path to NIFTI image that is an atlas
                         of multiple regions or a binary mask of one region, 2)
                         a nilearn query string formatted as `nilearn:<atlas-
                         name>:<atlas-parameters> 3) a file path to a .tsv file
@@ -48,12 +48,12 @@ optional arguments:
                         MNI space. Refer to online documentation for more
                         detail and how these options map onto the underlying
                         nilearn masker classes
-  --mask_img mask_img   File path of a binary mask a to be used when
+  --mask_img MASK_IMG   File path of a binary mask a to be used when
                         `roi_file` is a) an multi-region atlas or b) a list of
                         coordinates. This will restrict extraction to only
                         voxels within the mask. If `roi_file` is a single
                         region binary mask, this will be ignored
-  --labels labels [labels ...]
+  --labels LABELS [LABELS ...]
                         Labels corresponding to the region numbers in
                         `roi_file`. Can either be a) a list of strings, b) or
                         a .tsv file that contains a `Labels` column. Labels
@@ -101,8 +101,10 @@ optional arguments:
   --t_r T_R             The TR of the functional files, specified in seconds.
                         Required if temporal filtering/detrending is specified
   --high_pass HIGH_PASS
-                        High pass filter cut off in Hertz
-  --low_pass LOW_PASS   Low pass filter cut off in Hertz
+                        High pass filter cut off in Hertz. Do not use if high
+                        pass cosine regressors are specified in `regressors`
+  --low_pass LOW_PASS   Low pass filter cut off in Hertz. Do not use if low
+                        pass cosine regressors are specified in `regressors`
   --detrend             Temporally detrend the data. Default: False
   --discard_scans DISCARD_SCANS
                         Discard the first N scans of each functional image
@@ -118,17 +120,16 @@ optional arguments:
                         parameter is specified in both. See online
                         documentation for formatting and what keys to include
   -v, --verbose         Print out extraction progress
-
 ```
 
 ## GIfTIs
 
-Data can be extract from GIfTI functional files (`.func.gii`) data using `nixtract-gifti`:
+Data can be extract from GIFTI functional files (`.func.gii`) data using `nixtract-gifti`:
 
 ```
-usage: nixtract-gifti [-h] [--lh_files lh_files [lh_files ...]]
-                      [--rh_files rh_files [rh_files ...]]
-                      [--lh_roi_file roi_file] [--rh_roi_file roi_file]
+usage: nixtract-gifti [-h] [--lh_files LH_FILES [LH_FILES ...]]
+                      [--rh_files RH_FILES [RH_FILES ...]]
+                      [--lh_roi_file LH_ROI_FILE] [--rh_roi_file roi_file]
                       [--as_vertices] [--denoise-pre-extract]
                       [--regressor_files REGRESSOR_FILES [REGRESSOR_FILES ...]]
                       [--regressors REGRESSORS [REGRESSORS ...]]
@@ -144,24 +145,24 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --lh_files lh_files [lh_files ...]
-                        One or more input functional GIfTI files (.func.gii)
+  --lh_files LH_FILES [LH_FILES ...]
+                        One or more input functional GIFTI files (.func.gii)
                         for the left hemisphere. Can also be a single string
                         with wildcards (*) to specify all files matching the
                         file pattern. If so, these files are naturally sorted
                         by file name prior to extraction
-  --rh_files rh_files [rh_files ...]
-                        One or more input functional GIfTI files (.func.gii)
+  --rh_files RH_FILES [RH_FILES ...]
+                        One or more input functional GIFTI files (.func.gii)
                         for the right hemisphere. Can also be a single string
                         with wildcards (*) to specify all files matching the
                         file pattern. If so, these files are naturally sorted
                         by file name prior to extraction
-  --lh_roi_file roi_file
-                        A label GIfTI file (.label.gii) or a Freesurfer
+  --lh_roi_file LH_ROI_FILE
+                        A label GIFTI file (.label.gii) or a Freesurfer
                         annotation file (.annot) for the left hemipshere. Must
                         include one or more labels
   --rh_roi_file roi_file
-                        A label GIfTI file (.label.gii) or a Freesurfer
+                        A label GIFTI file (.label.gii) or a Freesurfer
                         annotation file (.annot) for the right hemipshere.
                         Must include one or more labels
   --as_vertices         Extract the timeseries of each vertex in a region
@@ -203,8 +204,10 @@ optional arguments:
   --t_r T_R             The TR of the functional files, specified in seconds.
                         Required if temporal filtering/detrending is specified
   --high_pass HIGH_PASS
-                        High pass filter cut off in Hertz
-  --low_pass LOW_PASS   Low pass filter cut off in Hertz
+                        High pass filter cut off in Hertz. Do not use if high
+                        pass cosine regressors are specified in `regressors`
+  --low_pass LOW_PASS   Low pass filter cut off in Hertz. Do not use if low
+                        pass cosine regressors are specified in `regressors`
   --detrend             Temporally detrend the data. Default: False
   --discard_scans DISCARD_SCANS
                         Discard the first N scans of each functional image
@@ -220,15 +223,16 @@ optional arguments:
                         parameter is specified in both. See online
                         documentation for formatting and what keys to include
   -v, --verbose         Print out extraction progress
+
 ```
 
 ## CIfTIs
 
-Data can be extract from CIfTI functional files (`.dtseries.nii`) data using `nixtract-cifti`:
+Data can be extract from CIFTI functional files (`.dtseries.nii`) data using `nixtract-cifti`:
 
 ```
 usage: nixtract-cifti [-h] [--input_files INPUT_FILES [INPUT_FILES ...]]
-                      [--roi_file roi_file] [--as_vertices]
+                      [--roi_file ROI_FILE] [--as_vertices]
                       [--denoise-pre-extract]
                       [--regressor_files REGRESSOR_FILES [REGRESSOR_FILES ...]]
                       [--regressors REGRESSORS [REGRESSORS ...]]
@@ -245,12 +249,12 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --input_files INPUT_FILES [INPUT_FILES ...]
-                        One or more input CIfTI dtseries files
+                        One or more input CIFTI dtseries files
                         (.dtseries.nii). Can also be a single string with
                         wildcards (*) to specify all files matching the file
                         pattern. If so, these files are naturally sorted by
                         file name prior to extraction
-  --roi_file roi_file   CIfTI dlabel file (.dlabel.nii) with one or more
+  --roi_file ROI_FILE   CIFTI dlabel file (.dlabel.nii) with one or more
                         labels
   --as_vertices         Extract the timeseries of each vertex in a a region
                         rather than the mean timeseries.This is only available
@@ -290,8 +294,10 @@ optional arguments:
   --t_r T_R             The TR of the functional files, specified in seconds.
                         Required if temporal filtering/detrending is specified
   --high_pass HIGH_PASS
-                        High pass filter cut off in Hertz
-  --low_pass LOW_PASS   Low pass filter cut off in Hertz
+                        High pass filter cut off in Hertz. Do not use if high
+                        pass cosine regressors are specified in `regressors`
+  --low_pass LOW_PASS   Low pass filter cut off in Hertz. Do not use if low
+                        pass cosine regressors are specified in `regressors`
   --detrend             Temporally detrend the data. Default: False
   --discard_scans DISCARD_SCANS
                         Discard the first N scans of each functional image

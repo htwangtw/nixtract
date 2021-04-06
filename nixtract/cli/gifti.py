@@ -16,14 +16,14 @@ def _cli_parser():
     """
     parser = argparse.ArgumentParser()
     # input files
-    parser.add_argument('--lh_files', nargs='+', type=str, metavar='lh_files',
+    parser.add_argument('--lh_files', nargs='+', type=str,
                         help='One or more input functional GIFTI files '
                              '(.func.gii) for the left hemisphere. Can also '
                              'be a single string with wildcards (*) to '
                              'specify all files matching the file pattern. If '
                              'so, these files are naturally sorted by file '
                              'name prior to extraction')
-    parser.add_argument('--rh_files', nargs='+', type=str, metavar='rh_files',
+    parser.add_argument('--rh_files', nargs='+', type=str,
                         help='One or more input functional GIFTI files '
                              '(.func.gii) for the right hemisphere. Can also '
                              'be a single string with wildcards (*) to '
@@ -31,7 +31,7 @@ def _cli_parser():
                              'so, these files are naturally sorted by file '
                              'name prior to extraction')
     # roi files
-    parser.add_argument('--lh_roi_file', type=str, metavar='roi_file', 
+    parser.add_argument('--lh_roi_file', type=str, 
                         help='A label GIFTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the left hemipshere. '
                              'Must include one or more labels')

@@ -22,7 +22,7 @@ def _cli_parser():
                              'the file pattern. If so, these files are '
                              'naturally sorted by file name prior to '
                              'extraction')
-    parser.add_argument('--roi_file', type=str, metavar='roi_file', 
+    parser.add_argument('--roi_file', type=str, 
                         help='CIFTI dlabel file (.dlabel.nii) with one or more '
                              'labels')
     # other

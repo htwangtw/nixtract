@@ -57,9 +57,13 @@ def base_cli(parser):
                              'seconds. Required if temporal '
                              'filtering/detrending is specified')
     parser.add_argument('--high_pass', type=float, 
-                        help='High pass filter cut off in Hertz')
+                        help='High pass filter cut off in Hertz. Do not use if '
+                             'high pass cosine regressors are specified in '
+                             '`regressors`')
     parser.add_argument('--low_pass', type=float, 
-                        help='Low pass filter cut off in Hertz')
+                        help='Low pass filter cut off in Hertz. Do not use if '
+                             'low pass cosine regressors are specified in '
+                             '`regressors`')
     parser.add_argument('--detrend', action='store_true', default=False,
                         help='Temporally detrend the data. Default: False')
     parser.add_argument('--discard_scans', type=int, 

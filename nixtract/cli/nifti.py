@@ -24,7 +24,7 @@ def _cli_parser():
                              'to specify all files matching the file pattern. '
                              'If so, these files are naturally sorted by file '
                              'name prior to extraction')
-    parser.add_argument('--roi_file', type=str, metavar='roi_file', 
+    parser.add_argument('--roi_file', type=str, 
                         help='Parameter that defines the region(s) of interest. '
                              'This can be 1) a file path to NIFTI image that is '
                              'an atlas of multiple regions or a binary mask of '
@@ -35,13 +35,13 @@ def _cli_parser():
                              'online documentation for more detail and how '
                              'these options map onto the underlying nilearn '
                              'masker classes')
-    parser.add_argument('--mask_img', type=str, metavar='mask_img',
+    parser.add_argument('--mask_img', type=str,
                         help='File path of a binary mask a to be used when '
                              '`roi_file` is a) an multi-region atlas or b) a list '
                              'of coordinates. This will restrict extraction to '
                              'only voxels within the mask. If `roi_file` is a '
                              'single region binary mask, this will be ignored')
-    parser.add_argument('--labels', nargs='+', type=str, metavar='labels',
+    parser.add_argument('--labels', nargs='+', type=str, 
                         help='Labels corresponding to the region numbers in '
                              '`roi_file`. Can either be a) a list of strings, b) '
                              'or a .tsv file that contains a `Labels` column. '
