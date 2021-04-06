@@ -20,55 +20,6 @@ def _r_to_p(r, n):
     return stats.t.sf(t, df=n - 2) * 2
 
 
-# def _fdr(pvals):
-#     """Benjamini-Hochberg false-discovery rate correction
-
-#     Note: This function from Pingouin, but is adapted and implemented here to 
-#     avoid requiring an entire dependency for just one function. This function 
-#     is specific to QC analyses and not intended for general use. The original 
-#     code can be found at:
-#     https://github.com/raphaelvallat/pingouin/blob/91b184780d27f291ff9f894d1c80f74c0c20e146/pingouin/multicomp.py#L12-L117
-
-#     Please use the Pinguoin function if you wish to include FDR corrections in 
-#     your own separate analyses.
-
-#     Parameters
-#     ----------
-#     pvals : array_like
-#         Array of p-values of the individual tests.
-
-#     Returns
-#     -------
-#     pval_corrected : array
-#         Corrected p values from FDR correction
-#     """
-#     # Convert to array and save original shape
-#     pvals = np.asarray(pvals)
-#     shape_init = pvals.shape
-#     pvals = pvals.ravel()
-#     num_nan = np.isnan(pvals).sum()
-
-#     # Sort the (flattened) p-values
-#     pvals_sortind = np.argsort(pvals)
-#     pvals_sorted = pvals[pvals_sortind]
-#     sortrevind = pvals_sortind.argsort()
-#     ntests = pvals.size - num_nan
-
-#     # Empirical CDF factor
-#     ecdffactor = np.arange(1, ntests + 1) / float(ntests)
-
-#     # Now we adjust the p-values
-#     pvals_corr = np.diag(pvals_sorted / ecdffactor[..., None])
-#     pvals_corr = np.minimum.accumulate(pvals_corr[::-1])[::-1]
-#     pvals_corr = np.clip(pvals_corr, None, 1)
-
-#     # And revert to the original shape and order
-#     pvals_corr = np.append(pvals_corr, np.full(num_nan, np.nan))
-#     pvals_corrected = pvals_corr[sortrevind].reshape(shape_init)
-
-#     return pvals_corrected
-
-
 def count_sig_edges(x, n):
     """Count proportion of significant edges in functional connectivity matrix
     
