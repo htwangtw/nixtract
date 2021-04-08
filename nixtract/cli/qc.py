@@ -77,7 +77,6 @@ def main():
     else:
         coordinates = None
 
-    plot_dir = os.path.join(params['out_dir'], 'plots')
-    quality_analysis(timeseries, confounds, coordinates, plot_dir, 
+    quality_analysis(timeseries, confounds, coordinates, params['out_dir'], 
                      n_jobs=params['n_jobs'], verbose=params['verbose'])
     # make_report(params['out_dir'])
