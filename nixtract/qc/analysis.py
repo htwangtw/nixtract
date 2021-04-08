@@ -13,7 +13,8 @@ from nilearn.connectome import ConnectivityMeasure, sym_matrix_to_vec
 import bct
 
 from .utils import check_confounds
-from .plotting import plot_tseries
+from .plotting import (plot_tseries, plot_dist_dependence, 
+                       plot_group_connectivity, plot_measures, plot_qc_fc)
 
 
 def _r_to_p(r, n):
@@ -223,34 +224,25 @@ def compute_dataset_measures(fc_matrices, measures, out_dir, coords=None):
         which is required for distance dependance QC-FC. Columns should be
         X, Y, and Z, respectively. By default None
     """
+    plot_measures(measures, out_dir)
+
     # average fc matrix and measures (sig. measures not performed as r 
     # values in matrix don't reflect actual corr stats)
     group_mean_fc = np.mean(fc_matrices, axis=0)
     mean_fc = np.mean(sym_matrix_to_vec(group_mean_fc, discard_diagonal=True))
     group_q = network_modularity(group_mean_fc)
-    # plot_connectivity(group_mean_fc, mean_fc, group_q) x
-
-    # FOR PROTOTYPING
-    np.savetxt('example_group_fc.tsv', group_mean_fc, delimiter='\t')
+    plot_group_connectivity(group_mean_fc, mean_fc, group_q, out_dir)
 
     # QC-FC
     qcfc_data = qc_fc(fc_matrices, measures['mean_fd'])
-    median_abs_qcfc = np.median(np.abs(qcfc_data))
-    # plot_qcfc() x
+    plot_qc_fc(qcfc_data, out_dir)
 
-    # FOR PROTOTYPING
-    np.savetxt('example_qc_fc.tsv', qcfc_data, delimiter='\t')
     
     if coords is not None:
         distances = sym_matrix_to_vec(cdist(coords, coords), 
                                       discard_diagonal=True)
-        dist_dependence = stats.spearmanr(qcfc_data, distances)
-
-        # FOR PROTOTYPING
-        print('dist dependence', dist_dependence)
-        np.savetxt('example_distances.tsv', distances, delimiter='\t')
-
-        # plot_dist_dependence() x
+        rho, p = stats.spearmanr(qcfc_data, distances)
+        plot_dist_dependence(distances, qcfc_data, rho, out_dir)
     else:
         print('No atlas provided, skipping distance dependence QC-FC')
 
@@ -351,15 +343,12 @@ def quality_analysis(timeseries, confounds, coords, out_dir, group_only=False,
     measures.to_csv(os.path.join(out_dir, 'measures.tsv'), sep='\t', 
                     index=False)
 
-    # FOR PROTOTYPING
-    np.savetxt('example_fc.tsv', fc_matrices[0], delimiter='\t')
-
     # group-level measures
     if n_ts > 1:
         if verbose:
             t = datetime.now().strftime("%H:%M:%S")
             print(f'[{t}] Computing group-level measures')
-        compute_dataset_measures(fc_matrices, measures, out_dir, 
+        compute_dataset_measures(fc_matrices, measures, plot_dir, 
                                  coords=coords)
     else:
         warnings.warn('Only one timeseries file provided; skipping group '

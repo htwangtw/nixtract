@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+from scipy import stats
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -23,25 +24,6 @@ def _check_confounds_alignment(tseries, confounds):
     if diff > 0:
         confounds = confounds[diff:]
     return confounds
-
-def plot_connectivity(ax, mat, mean, q, n_sig=None):
-
-    # fig, ax = plt.subplots(figsize=(4, 4))
-    # fig_pos = ax.get_position()
-    # cbar_ax = fig.add_axes([.905, fig_pos.y0, .02, .3])
-    ax = sns.heatmap(mat, vmin=-1, vmax=1, cmap=_diverging_palette(), 
-                     square=True, ax=ax, cbar_kws={"shrink": .5})
-    ax.set_axis_off()
-
-    if n_sig:
-        info = (f"Mean r = {mean:.3f}\n"
-                f"Prop. p<.05 = {n_sig:.3f}\n"
-                f"Modularity (Q) = {q:.3f}")
-    else:
-        info = (f"Mean r = {mean}\n"
-                f"Modularity (Q) = {q}")
-    ax.set_title(info)
-    plt.show()
 
 
 def _title_plot(measures, ax):
@@ -89,7 +71,7 @@ def _fd_trace(confounds, ax):
     ax.plot(confounds['framewise_displacement'], c='C3', lw=1)
     ax.axhline(.2, c='k', ls='--')
     ax.margins(x=0)
-    ax.set_ylabel('Framewise\n Displacement\n(mm)', fontsize=8)
+    ax.set_ylabel('Framewise\n displacement\n(mm)', fontsize=8)
 
     xmax = confounds.shape[0] - 1
     interval = xmax / 4
@@ -148,7 +130,7 @@ def _info_plot(measures, ax):
 
     mean = measures['mean_r']
     n_sig = measures['sig_edges']
-    n_sig_corr = measures['sig_edges']
+    n_sig_corr = measures['sig_edges_corrected']
     q = measures['q']
 
     info = (f"Mean r = {mean:.3f}\n"
@@ -211,60 +193,86 @@ def plot_tseries(tseries, confounds, measures, mat, out_dir):
     fig.savefig(os.path.join(out_dir, out), dpi=300)
 
 
-def plot_measures(measures):
-    pass
 
-    # mean_fd
+def _corrfunc(x, y, ax=None, **kws):
+    """Plot the correlation coefficient in the top left hand corner of a plot."""
+    r, p = stats.pearsonr(x, y)
+    ax = ax or plt.gca()
 
-    # n_spikes
-
-    # mean_r
-
-    # q
-
-    # mean fd vs mean r 
-
-    # mean fd vs q
+    xy = (.6, .8) if r < 0 else (.1, .8)
+    # sig = 'C3' if p < .05 else 'k'
+    # ptext = 'p < .001' if p < .001 else f'p = {p:.3f}'
+    
+    ax.annotate(f'r = {r:.3f}', xy=xy, fontsize=8, xycoords=ax.transAxes)
 
 
+def plot_measures(measures, out_dir):
+    
+    cols = ['mean_fd', 'n_spikes', 'mean_r', 'sig_edges', 'q']
+    g = sns.pairplot(measures, vars=cols, diag_kind='kde', 
+                     kind='reg', corner=True, height=1.2, aspect=1.7)
+    g.map_lower(_corrfunc)
+    g.fig.suptitle('Sample QC measures')
+
+    out = os.path.join(out_dir, 'sample_measures.png')
+    g.savefig(out, dpi=300)
 
 
-def plot_qc_fc(qc_fc):
+def plot_group_connectivity(mat, mean, q, out_dir):
+
+    fig, ax = plt.subplots(figsize=(4, 4))
+    fig_pos = ax.get_position()
+    # cbar_ax = fig.add_axes([.905, fig_pos.y0, .02, .3])
+    ax = sns.heatmap(mat, vmin=-1, vmax=1, cmap=_diverging_palette(), 
+                     square=True, ax=ax, cbar_kws={"shrink": .5})
+    ax.set_axis_off()
+
+    info = (f"Avg. connectivity matrix\n"
+            f"Mean r = {mean:.3f}\n"
+            f"Modularity (Q) = {q:.3f}")
+    ax.set_title(info)
+    out = os.path.join(out_dir, 'connectivity.png')
+    fig.savefig(out, dpi=300)
+
+
+def plot_qc_fc(qc_fc, out_dir):
 
     fig, ax = plt.subplots(figsize=(3, 2))
-    ax = sns.kdeplot(x=qc_fc, color=_kde_color(), alpha=1, linewidth=0, 
-                     fill=True, ax=ax)
+    ax = sns.kdeplot(x=qc_fc, fill=True, ax=ax)
     ax.set(xlabel='r')
     ax.axvline(0, c='k', lw=1)
     sns.despine()
     
     # show mean
-    mean = np.mean(qc_fc)
+    med_abs = np.median(np.abs(qc_fc))
     x_loc = ax.get_xlim()[1] * .3
     yloc = ax.get_ylim()[1] * .9   
-    ax.text(x=x_loc , y=yloc, s=f'mean = {mean:0.3f}')
+    ax.text(x=x_loc , y=yloc, s=f'MA = {med_abs:0.3f}')
 
     fig.subplots_adjust(top=0.9)
     ax.set_title('QC-FC', fontdict={'size': 12})
 
-    fig.show()
+    out = os.path.join(out_dir, 'qcfc.png')
+    fig.savefig(out, dpi=300)
 
 
-def plot_dist_dependence(distances, qc_fc, r):
+def plot_dist_dependence(distances, qc_fc, r, out_dir):
 
     g = sns.JointGrid(x=distances, y=qc_fc, ylim=(-1, 1), height=4)
     g.plot_joint(sns.histplot, cmap='viridis', bins=50, cbar=False)
     g.plot_joint(sns.regplot, scatter=False, ci=None, truncate=False, 
                  line_kws=dict(color='m', linewidth=1))
-    g.plot_marginals(sns.kdeplot, color=_kde_color(), alpha=1, linewidth=0, 
+    g.plot_marginals(sns.kdeplot, color=_kde_color(), alpha=.8, linewidth=1, 
                      fill=True)
-    g.ax_joint.set(xlabel='Euclidean Distance', ylabel='QC-FC', 
+    g.ax_joint.set(xlabel='Euclidean distance', ylabel='QC-FC', 
                    yticks=np.arange(-1, 1.5, .5))
 
     # display correlation value
     x_loc = np.max(distances) * .7  
-    g.ax_joint.text(x=x_loc , y=.9, s=f'rho = {r:.3f}', )
+    g.ax_joint.text(x=x_loc , y=.9, s=f'ρ = {r:.3f}', )
 
     g.fig.subplots_adjust(top=0.9)
-    g.fig.suptitle('Distance Dependence', fontdict={'size': 12})
-    plt.show()
+    g.fig.suptitle('Distance dependence', fontsize=10)
+    
+    out = os.path.join(out_dir, 'distance_dependence.png')
+    g.fig.savefig(out, dpi=300)
