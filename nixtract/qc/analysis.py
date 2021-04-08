@@ -8,10 +8,12 @@ import numpy as np
 from scipy import stats
 from scipy.spatial.distance import cdist
 import pandas as pd
+from statsmodels.stats.multitest import fdrcorrection
 from nilearn.connectome import ConnectivityMeasure, sym_matrix_to_vec
 import bct
 
 from .utils import check_confounds
+from .plotting import plot_tseries
 
 
 def _r_to_p(r, n):
@@ -42,10 +44,10 @@ def count_sig_edges(x, n):
     pvals = np.array([_r_to_p(r, n) for r in edges])
     prop_sig = len(pvals[pvals < .05]) / len(pvals)
 
-    # fdr_pvals = _fdr(pvals)
-    # corrected_prop_sig = len(fdr_pvals[fdr_pvals < .05]) / len(fdr_pvals)
+    rejected, _ = fdrcorrection(pvals)
+    corrected_prop_sig = rejected.sum() / len(rejected)
 
-    return prop_sig#, corrected_prop_sig
+    return prop_sig, corrected_prop_sig
 
 
 def network_modularity(x, n_iters=100):
@@ -145,7 +147,7 @@ def compute_tseries_measures(tseries, confounds):
     mat = cm.fit_transform([tseries.values])[0]
 
     mean_r = np.mean(sym_matrix_to_vec(mat, discard_diagonal=True))
-    count = count_sig_edges(mat, n_samples)
+    count, corrected_count = count_sig_edges(mat, n_samples)
     modularity = network_modularity(mat)
     
     measures = {
@@ -154,7 +156,7 @@ def compute_tseries_measures(tseries, confounds):
         'n_spikes': n_spikes,
         'mean_r': mean_r,
         'sig_edges': count, 
-        # 'significant_edges_corrected': corrected_count,
+        'sig_edges_corrected': corrected_count,
         'q': modularity
     }
     return measures, mat
@@ -190,8 +192,8 @@ def analyze_tseries(fname, confounds, plot=True, out_dir=None, verbose=False):
     measures, mat = compute_tseries_measures(tseries, confounds_df)
     measures['fname'] = os.path.basename(fname)
     measures['confounds'] = os.path.basename(confounds)
-    # if plot and save_dir:
-    #     plot_scan(tseries, confounds, measures, mat, out_dir)
+    if plot and out_dir:
+        plot_tseries(tseries, confounds_df, measures, mat, out_dir)
     return measures, mat
 
 
@@ -225,21 +227,30 @@ def compute_dataset_measures(fc_matrices, measures, out_dir, coords=None):
     # values in matrix don't reflect actual corr stats)
     group_mean_fc = np.mean(fc_matrices, axis=0)
     mean_fc = np.mean(sym_matrix_to_vec(group_mean_fc, discard_diagonal=True))
-    modularity_abs = network_modularity(group_mean_fc)
-    modularity_prop = network_modularity(group_mean_fc)
-    # group_connectivity_plot(group_mean_fc, mean_fc, modularity_abs, 
-    #                         modularity_prop, out_dir)
+    group_q = network_modularity(group_mean_fc)
+    # plot_connectivity(group_mean_fc, mean_fc, group_q) x
+
+    # FOR PROTOTYPING
+    np.savetxt('example_group_fc.tsv', group_mean_fc, delimiter='\t')
 
     # QC-FC
     qcfc_data = qc_fc(fc_matrices, measures['mean_fd'])
     median_abs_qcfc = np.median(np.abs(qcfc_data))
-    # qcfc_plot() 
+    # plot_qcfc() x
+
+    # FOR PROTOTYPING
+    np.savetxt('example_qc_fc.tsv', qcfc_data, delimiter='\t')
     
     if coords is not None:
         distances = sym_matrix_to_vec(cdist(coords, coords), 
                                       discard_diagonal=True)
         dist_dependence = stats.spearmanr(qcfc_data, distances)
-        # dist_dependence_plot()
+
+        # FOR PROTOTYPING
+        print('dist dependence', dist_dependence)
+        np.savetxt('example_distances.tsv', distances, delimiter='\t')
+
+        # plot_dist_dependence() x
     else:
         print('No atlas provided, skipping distance dependence QC-FC')
 
@@ -337,7 +348,11 @@ def quality_analysis(timeseries, confounds, coords, out_dir, group_only=False,
     measures = pd.DataFrame(ts_measures)
     measures = measures[['fname', 'confounds', 'n', 'mean_fd', 'n_spikes', 
                          'mean_r', 'sig_edges', 'q']]
-    measures.to_csv(os.path.join(out_dir, 'measures.tsv'), sep='\t')
+    measures.to_csv(os.path.join(out_dir, 'measures.tsv'), sep='\t', 
+                    index=False)
+
+    # FOR PROTOTYPING
+    np.savetxt('example_fc.tsv', fc_matrices[0], delimiter='\t')
 
     # group-level measures
     if n_ts > 1:

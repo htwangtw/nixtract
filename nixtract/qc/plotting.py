@@ -1,8 +1,12 @@
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import seaborn as sns
+from pandas.plotting import autocorrelation_plot
+from nilearn.connectome import sym_matrix_to_vec
 
 
 def _kde_color():
@@ -13,24 +17,87 @@ def _diverging_palette():
     return sns.diverging_palette(220, 20, s=90, as_cmap=True)
 
 
-def plot_connectivity(mat, mean, q, n_sig=None):
+def _check_confounds_alignment(tseries, confounds):
+    """Check if tseries has initial scans discarded"""
+    diff = confounds.shape[0] - tseries.shape[0]
+    if diff > 0:
+        confounds = confounds[diff:]
+    return confounds
 
-    fig, ax = plt.subplots(figsize=(4, 4))
-    fig_pos = ax.get_position()
-    cbar_ax = fig.add_axes([.905, fig_pos.y0, .02, .3])
+def plot_connectivity(ax, mat, mean, q, n_sig=None):
+
+    # fig, ax = plt.subplots(figsize=(4, 4))
+    # fig_pos = ax.get_position()
+    # cbar_ax = fig.add_axes([.905, fig_pos.y0, .02, .3])
     ax = sns.heatmap(mat, vmin=-1, vmax=1, cmap=_diverging_palette(), 
-                     square=True, ax=ax, cbar_ax=cbar_ax)
+                     square=True, ax=ax, cbar_kws={"shrink": .5})
     ax.set_axis_off()
 
     if n_sig:
-        info = (f"Mean r = {mean}\n"
-                f"Prop. p<.05 = {n_sig}\n"
-                f"Modularity (Q) = {q}")
+        info = (f"Mean r = {mean:.3f}\n"
+                f"Prop. p<.05 = {n_sig:.3f}\n"
+                f"Modularity (Q) = {q:.3f}")
     else:
         info = (f"Mean r = {mean}\n"
                 f"Modularity (Q) = {q}")
     ax.set_title(info)
     plt.show()
+
+
+def _title_plot(measures, ax):
+
+    fname = measures['fname']
+    confounds = measures['confounds']
+
+
+    ax.annotate(fname, xy=(-.2, 0.6), xycoords='axes fraction', va='center', 
+                ha='left', weight='bold')
+    
+    ax.annotate(f'confounds: {confounds}', xy=(-.2, 0.3), 
+                xycoords='axes fraction', va='center', ha='left')
+    plt.axis('off')
+    return ax
+
+
+def _motion_trace_plot(confounds, ax, param_type='trans'):
+
+    list_ = []
+    for i in ['x', 'y', 'z']:
+        param = f'{param_type}_{i}'
+        g = ax.plot(confounds[param], label=i, lw=1)
+        list_.append(g)
+
+    xmax = confounds.shape[0]
+    interval = xmax / 4
+    xticks =  np.round(np.arange(0, xmax + interval, interval), 0).astype(int)
+    ax.set_xticks(xticks)
+    ax.margins(x=0)
+
+    if param_type == 'trans':
+        ax.legend(fontsize='small', frameon=False, labelspacing=0, 
+                  ncol=len(list_), bbox_to_anchor=(0, 1.3), 
+                  loc='upper left')
+        ax.set_ylabel('Translation\n(mm)',  fontsize=8)
+    elif param_type == 'rot':
+        ax.set_ylabel('Rotation\n(deg)', fontsize=8)
+
+    return ax
+
+
+def _fd_trace(confounds, ax):
+
+    ax.plot(confounds['framewise_displacement'], c='C3', lw=1)
+    ax.axhline(.2, c='k', ls='--')
+    ax.margins(x=0)
+    ax.set_ylabel('Framewise\n Displacement\n(mm)', fontsize=8)
+
+    xmax = confounds.shape[0] - 1
+    interval = xmax / 4
+    xticks =  np.round(np.arange(0, xmax + interval, interval), 0).astype(int)
+    ax.set_xticks(xticks)
+    ax.margins(x=0)
+
+    return ax
 
 
 def _carpet_plot(tseries, fd, ax):
@@ -45,39 +112,103 @@ def _carpet_plot(tseries, fd, ax):
     ax.set_yticklabels([])
 
     # set 5 ticks
-    xmax = x.shape[1]
+    xmax = x.shape[1] - 1
     interval = xmax / 4
-    xticks =  np.round(np.arange(0, xmax + interval, interval), 0)
+    xticks =  np.round(np.arange(0, xmax + interval, interval), 0).astype(int)
     ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks + 1)
 
-    ax.set_xlabel('Scan')
-    ax.set_ylabel('Regions')
+    ax.set_xlabel('TR')
+    ax.set_ylabel('Regions', fontsize=8)
 
-    # check if tseries has scans discarded
-    diff = fd.shape[0] - tseries.shape[0]
-    if diff > 0:
-        fd = fd[diff:]
-
-    spikes = np.argwhere(fd > 20).ravel()
+    spikes = np.argwhere(fd > .2).ravel()
     if len(spikes) > 0:
-        ax.scatter(x=spikes, y=[ax.get_ylim()[1] - 15] * len(spikes), 
-                   marker='v', c='r', s=25, clip_on=False)
-    
+        ypos = ax.get_ylim()[1] - 13
+        ax.scatter(x=spikes, y=[ypos] * len(spikes), marker="|", c='C3', s=25, 
+                   clip_on=False)
+
     for d in ["left", "top", "bottom", "right"]:
         plt.gca().spines[d].set_visible(False)
+        
+    return ax
+
+
+def _r_plot(mat, ax):
+    edges = sym_matrix_to_vec(mat, discard_diagonal=True)
+    ax = sns.kdeplot(edges, fill=True, alpha=1, linewidth=0, 
+                     color='C7', ax=ax)
+    ax.set_xlabel('r')
+    ax.set_xlim(-1, 1)
+    ax.axvline(0, c='k', ls='--')
+    ax.set_ylabel('Density', fontsize=8)
 
     return ax
+
+def _info_plot(measures, ax):
+
+    mean = measures['mean_r']
+    n_sig = measures['sig_edges']
+    n_sig_corr = measures['sig_edges']
+    q = measures['q']
+
+    info = (f"Mean r = {mean:.3f}\n"
+            f"Prop. p<.05 = {n_sig:.3f}\n"
+            f"Prop. q<.05 = {n_sig_corr:.3f}\n"
+            f"Modularity (Q) = {q:.3f}")
+    ax.annotate(info, xy=(-.5, 0.5), xycoords='axes fraction', va='center', 
+                ha='left')
+    plt.axis('off')
+    return ax
+
+
+def _tseries_cmat(mat, ax):
     
+    ax = sns.heatmap(mat, vmin=-1, vmax=1, cmap=_diverging_palette(), 
+                     square=True, ax=ax, cbar_kws={"shrink": .5})
+    ax.set_axis_off()
+    ax.set_title('Connectivity')
+    return ax
 
 
-def _motion_trace_plot(confounds):
-    pass
+def plot_tseries(tseries, confounds, measures, mat, out_dir):
+    
+    confounds = _check_confounds_alignment(tseries, confounds)
 
+    fig = plt.figure(figsize=(10, 6))
+    motion_gs = plt.GridSpec(5, 9, hspace=0.1, wspace=2)
+    conn_gs = plt.GridSpec(5, 9, hspace=-.3, wspace=1)
 
+    gs1 = fig.add_subplot(motion_gs[0, :5])
+    _title_plot(measures, gs1)
 
-def plot_scan(tseries, confounds, measures, mat):
-    pass
+    gs2 = fig.add_subplot(motion_gs[1, :5])
+    _motion_trace_plot(confounds, gs2)
 
+    gs3 = fig.add_subplot(motion_gs[2, :5])
+    _motion_trace_plot(confounds, gs3, 'rot')
+
+    gs4 = fig.add_subplot(motion_gs[3, :5])
+    _fd_trace(confounds, gs4)
+
+    for g in [gs2, gs3, gs4]:
+        g.set_xticks([])
+        g.set_xticklabels([])
+
+    gs5 = fig.add_subplot(motion_gs[4, :5])
+    _carpet_plot(tseries, confounds['framewise_displacement'].values, 
+                 gs5)
+
+    gs6 = fig.add_subplot(conn_gs[:4, 5:])
+    _tseries_cmat(mat, gs6)
+
+    gs7 = fig.add_subplot(conn_gs[4:, 5:7])
+    _r_plot(mat, gs7)
+
+    gs8 = fig.add_subplot(conn_gs[4:, 7])
+    _info_plot(measures, gs8)
+
+    out = measures['fname'].replace('timeseries.tsv', 'plot.png')
+    fig.savefig(os.path.join(out_dir, out), dpi=300)
 
 
 def plot_measures(measures):
@@ -137,7 +268,3 @@ def plot_dist_dependence(distances, qc_fc, r):
     g.fig.subplots_adjust(top=0.9)
     g.fig.suptitle('Distance Dependence', fontdict={'size': 12})
     plt.show()
-
-
-
-
