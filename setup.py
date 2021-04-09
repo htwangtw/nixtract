@@ -35,10 +35,10 @@ setup(
         'natsort>=7.1.1',
         'scipy>=1.5.0',
         'scikit-learn>=0.24.1',
-        'load_confounds',
         'bctpy>=0.5.2',
         'seaborn>=0.11.0',
         'statsmodels>=0.12.2 '
+        'load_confounds>=0.6.5'
     ],
     tests_require=test_deps,
     extras_require=extras,

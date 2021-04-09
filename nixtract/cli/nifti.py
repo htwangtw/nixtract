@@ -225,7 +225,8 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
         smoothing_fwhm=params['smoothing_fwhm']
     )
     if regressor_file is not None:
-        extractor.set_regressors(regressor_file, params['regressors'])
+        extractor.set_regressors(regressor_file, params['regressors'], 
+                                 params["load_confound_kwargs"])
 
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
@@ -234,6 +235,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
 
+    return out, extractor
 
 def main():
     params = vars(_cli_parser())
