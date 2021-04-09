@@ -97,6 +97,8 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
     extractor.extract()
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
+
+    return out, extractor
     
 
 def main():

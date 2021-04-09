@@ -177,6 +177,8 @@ def extract_gifti(input_files, roi_file, regressor_file, params):
     
     extractor.extract()
     extractor.save(out, params['n_decimals'])
+
+    return out, extractor
     
 
 def main():

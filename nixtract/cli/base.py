@@ -251,7 +251,24 @@ def replace_file_ext(fname):
     for ext in ['.nii.gz', '.func.gii', '.dtseries.nii']:
         if fname.endswith(ext):
             return os.path.basename(fname).replace(ext, '_timeseries.tsv')
-            
+
+
+def _make_regressor_file(outputs, out_dir):
+
+    reg_dict = {}
+    for fname, extractor in outputs:
+        if extractor.regressor_names is not None:
+            reg_dict[fname] = list(extractor.regressor_names)
+
+    if len(reg_dict) != 0:
+        # check if all extractors used load_confounds
+        print([x[1]._load_confounds for x in outputs])
+        if all([x[1]._load_confounds for x in outputs]):
+            reg_file = os.path.join(out_dir, 'nixtract_data',
+                                    'load_confound_regressors.json')
+            with open(reg_file, 'w') as f:
+                json.dump(reg_dict, f, indent=2)
+
 
 def run_extraction(extract_func, input_files, roi_file, params):
     """Extract timeseries from input files
@@ -299,8 +316,11 @@ def run_extraction(extract_func, input_files, roi_file, params):
     n_jobs = params['n_jobs']
     # no parallelization
     if n_jobs == 1:
+        res = []
         for i, in_file in enumerate(input_files):
-            extract_func(in_file, roi_file, regressor_files[i], params)
+            out, extractor = extract_func(in_file, roi_file, 
+                                          regressor_files[i], params)
+            res.append((out, extractor))
     else:
         args = zip(
             input_files,
@@ -309,4 +329,6 @@ def run_extraction(extract_func, input_files, roi_file, params):
             repeat(params)
         )
         with multiprocessing.Pool(processes=n_jobs) as pool:
-            pool.starmap(extract_func, args)
+            res = pool.starmap(extract_func, args)
+
+    _make_regressor_file(res, params['out_dir'])

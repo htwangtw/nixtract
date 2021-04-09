@@ -235,6 +235,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
 
+    return out, extractor
 
 def main():
     params = vars(_cli_parser())
