@@ -2,6 +2,7 @@
 
 import os
 import sys
+import ast
 import argparse
 import glob
 import json
@@ -48,7 +49,14 @@ def base_cli(parser):
                              'https://github.com/SIMEXP/load_confounds. If no '
                              'regressor information provided but regressor '
                              'files are provided, then all regressors in '
-                             'regressor files are used')                    
+                             'regressor files are used')
+    parser.add_argument('--load_confound_kwargs', type=str, 
+                        help="Keyword arguments for load confound either "
+                             "predefined or flexible strategies. Input must be "
+                             "a Python dictionary wrapped in double quotes. " 
+                             "Refer to documentation for the available "
+                             "arguments for each load confound strategy: "
+                             "https://github.com/SIMEXP/load_confounds")                    
     parser.add_argument('--standardize', action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
                              'Default: False')
@@ -131,6 +139,17 @@ def check_glob(x):
                          'string or list of string')
 
 
+def _parse_input_str(x):
+    """Safely parse input dictionary string for load_confound_kwargs
+    
+    Only permits strings, numbers, tuples, lists, dicts, booleans, and None.
+    """
+    try:
+        return ast.literal_eval(x)
+    except ValueError as e:
+        raise ValueError("Invalid dictionary string in load_confound_kwargs")  
+
+
 def handle_base_args(params):
     """Check the validity of base CLI arguments
 
@@ -162,6 +181,9 @@ def handle_base_args(params):
     params['regressors'] = empty_to_none(params['regressors'])
     if isinstance(params['regressors'], str):
         params['regressors'] = [params['regressors']]
+
+    if isinstance(params["load_confound_kwargs"], str):
+        params["load_confound_kwargs"] = _parse_input_str(params["load_confound_kwargs"])
 
     # make output dirs
     os.makedirs(os.path.join(params['out_dir'], 'nixtract_data'),
