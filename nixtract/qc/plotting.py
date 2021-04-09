@@ -210,7 +210,9 @@ def plot_measures(measures, out_dir):
     
     cols = ['mean_fd', 'n_spikes', 'mean_r', 'sig_edges', 'q']
     g = sns.pairplot(measures, vars=cols, diag_kind='kde', 
-                     kind='reg', corner=True, height=1.2, aspect=1.7)
+                     kind='reg', corner=True, height=1.2, aspect=1.7, 
+                     plot_kws={'scatter_kws': {'markersize': 5}, 
+                               'line_kws': {'c': 'C3'}})
     g.map_lower(_corrfunc)
     g.fig.suptitle('Sample QC measures')
 
