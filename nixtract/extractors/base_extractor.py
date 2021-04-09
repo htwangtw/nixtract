@@ -38,9 +38,42 @@ def _load_from_strategy(denoiser, fname):
         raise ValueError(error_msg) from e
 
 
+def _load_predefined_strategy(regressors, regressor_file, kwargs=None):
+    """Read a pre-defined strategy from load_confounds"""
+    if kwargs is not None:
+        cmd = 'load_confounds.{}(**kwargs)'.format(regressors)
+    else:
+        cmd = 'load_confounds.{}()'.format(regressors)
+    
+    denoiser = eval(cmd)
+    return _load_from_strategy(denoiser, regressor_file)
+
+
+def _load_flexible_strategy(regressors, regressor_file, kwargs=None):
+    """Load a flexible strategy from load_confounds"""
+    if kwargs is not None:
+        if "strategy" in kwargs:
+            kwargs.pop('strategy')
+        denoiser = load_confounds.Confounds(strategy=regressors, **kwargs)
+    else:
+        denoiser = load_confounds.Confounds(strategy=regressors)
+    return _load_from_strategy(denoiser, regressor_file)
+
+
+def _load_regressor_names(regressors, regressor_file):
+    """Load a list of regressor names"""
+    try:
+        regs = pd.read_table(regressor_file, usecols=regressors)
+        return regs.values, regs.columns
+    except ValueError as e:
+        msg = 'Not all regressors are found in regressor file'
+        raise ValueError(msg) from e
+
+
 class BaseExtractor(object):
 
-    def set_regressors(self, regressor_file, regressors=None):
+    def set_regressors(self, regressor_file, regressors=None, 
+                       load_confounds_kwargs=None):
         """Set regressors to be used with extraction
 
         NaN imputation is done by default because nilearn.signal.clean will 
@@ -65,37 +98,38 @@ class BaseExtractor(object):
         ValueError
             Regressors is not a list or a str
         """
-
-        # specific strategies for load_confounds
+        # strategy options in load confounds
         strategies = ['Params2', 'Params6', 'Params9', 'Params24', 'Params36', 
                       'AnatCompCor', 'TempCompCor'] 
         flexible_strategies = ['motion', 'high_pass', 'wm_csf', 'compcor', 
                                'global']
 
+        if isinstance(regressors, str):
+            regressors = [regressors]
+
+        # load regressors based on regressors provided
         if regressors is None:
-            # use all regressors from file
             regs = pd.read_table(regressor_file)
             names = regs.columns
             regs = regs.values
+            self._load_confounds = False
+        
         elif len(regressors) == 1 and (regressors[0] in strategies):
-            # predefined strategy
-            denoiser = eval('load_confounds.{}()'.format(regressors[0]))
-            regs, names = _load_from_strategy(denoiser, regressor_file)
+            regs, names = _load_predefined_strategy(regressors[0], 
+                                                    regressor_file, 
+                                                    load_confounds_kwargs)
+            self._load_confounds = True
+
         elif set(regressors) <= set(flexible_strategies):
-            # flexible strategy
-            denoiser = load_confounds.Confounds(strategy=regressors, 
-                                                demean=False)
-            regs, names = _load_from_strategy(denoiser, regressor_file)
+            regs, names = _load_flexible_strategy(regressors, regressor_file, 
+                                                  load_confounds_kwargs)
+            self._load_confounds = True
+
         elif all([x not in strategies + flexible_strategies 
                   for x in regressors]):
-            # list of regressor names
-            try:
-                regs = pd.read_table(regressor_file, usecols=regressors)
-                names = regs.columns
-                regs = regs.values
-            except ValueError as e:
-                msg = 'Not all regressors are found in regressor file'
-                raise ValueError(msg) from e
+            regs, names = _load_regressor_names(regressors, regressor_file)
+            self._load_confounds = False
+        
         else:
             raise ValueError('Invalid regressors. Regressors must be a list '
                              'of column names that appear in regressor_files, '
