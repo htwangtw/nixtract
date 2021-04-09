@@ -112,19 +112,23 @@ class BaseExtractor(object):
             regs = pd.read_table(regressor_file)
             names = regs.columns
             regs = regs.values
+            self._load_confounds = False
         
         elif len(regressors) == 1 and (regressors[0] in strategies):
             regs, names = _load_predefined_strategy(regressors[0], 
                                                     regressor_file, 
                                                     load_confounds_kwargs)
-        
+            self._load_confounds = True
+
         elif set(regressors) <= set(flexible_strategies):
             regs, names = _load_flexible_strategy(regressors, regressor_file, 
                                                   load_confounds_kwargs)
-        
+            self._load_confounds = True
+
         elif all([x not in strategies + flexible_strategies 
                   for x in regressors]):
             regs, names = _load_regressor_names(regressors, regressor_file)
+            self._load_confounds = False
         
         else:
             raise ValueError('Invalid regressors. Regressors must be a list '
