@@ -50,7 +50,7 @@ def base_cli(parser):
                              'regressor information provided but regressor '
                              'files are provided, then all regressors in '
                              'regressor files are used')
-    parser.add_argument('--load_confound_kwargs', type=str, 
+    parser.add_argument('--load_confounds_kwargs', type=str, 
                         help="Keyword arguments for load confound either "
                              "predefined or flexible strategies. Input must be "
                              "a Python dictionary wrapped in double quotes. " 
@@ -182,8 +182,8 @@ def handle_base_args(params):
     if isinstance(params['regressors'], str):
         params['regressors'] = [params['regressors']]
 
-    if isinstance(params["load_confound_kwargs"], str):
-        params["load_confound_kwargs"] = _parse_input_str(params["load_confound_kwargs"])
+    if isinstance(params["load_confounds_kwargs"], str):
+        params["load_confounds_kwargs"] = _parse_input_str(params["load_confounds_kwargs"])
 
     # make output dirs
     os.makedirs(os.path.join(params['out_dir'], 'nixtract_data'),
@@ -264,7 +264,7 @@ def _make_regressor_file(outputs, out_dir):
         # check if all extractors used load_confounds
         if all([x[1]._load_confounds for x in outputs]):
             reg_file = os.path.join(out_dir, 'nixtract_data',
-                                    'load_confound_regressors.json')
+                                    'load_confounds_regressors.json')
             with open(reg_file, 'w') as f:
                 json.dump(reg_dict, f, indent=2)
 
