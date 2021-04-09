@@ -262,7 +262,6 @@ def _make_regressor_file(outputs, out_dir):
 
     if len(reg_dict) != 0:
         # check if all extractors used load_confounds
-        print([x[1]._load_confounds for x in outputs])
         if all([x[1]._load_confounds for x in outputs]):
             reg_file = os.path.join(out_dir, 'nixtract_data',
                                     'load_confound_regressors.json')
