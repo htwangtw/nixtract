@@ -38,7 +38,7 @@ setup(
         'bctpy>=0.5.2',
         'seaborn>=0.11.0',
         'statsmodels>=0.12.2 '
-        'load_confounds>=0.6.5'
+        'load_confounds>=0.11.1'
     ],
     tests_require=test_deps,
     extras_require=extras,
