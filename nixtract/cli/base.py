@@ -85,7 +85,7 @@ def base_cli(parser):
                              'timeseries files. Fewer decimals are recommended '
                              'for reducing disk-space, particularly for large '
                              'extractions')
-    parser.add_argument('-c', '--config', type=str.lower,
+    parser.add_argument('-c', '--config', type=str,
                         help='A configuration .json file to pass parameters '
                              'This will overwrite command-line arguments if '
                              'the same parameter is specified in both. See '
