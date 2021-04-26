@@ -3,6 +3,8 @@ __pycache__/
 .vscode/
 .eggs/
 nixtract.egg-info
+build/
+dist/
 scratch/
 .pytest_cache/
 tests/data/mock

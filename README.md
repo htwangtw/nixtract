@@ -8,9 +8,19 @@
 
 The primary goal of `nixtract` is to provide the user with ready-to-use timeseries data for a variety of fMRI analyses. `nixtract` can extract the mean timeseries for each region in a provided atlas, or `nixtract` can also extract the timeseries of individual voxels/vertices within a specified region. These timeseries can be flexibly denoised using temporal filtering/detrending, spatial smoothing, and confound regression, thus providing the user fully processed timeseries for subsequent analysis.   
 
-Nixtract has a CLI for each file type, as overviewed below:
+## Installation
 
-## NIfTIs
+`nixtract` can be installed via `pip` using the following command:
+
+```
+pip install nixtract
+```
+
+## Command Line Interfaces
+
+Nixtract has a command-line interface (CLI) for each file type, as overviewed below:
+
+### NIFTIs
 
 Data can be extract from NIFTI (`.nii` or `.nii.gz`) data using `nixtract-nifti`:
 
@@ -126,7 +136,7 @@ optional arguments:
   -v, --verbose         Print out extraction progress
 ```
 
-## GIfTIs
+### GIFTIs
 
 Data can be extract from GIFTI functional files (`.func.gii`) data using `nixtract-gifti`:
 
@@ -230,7 +240,7 @@ optional arguments:
 
 ```
 
-## CIfTIs
+### CIFTIs
 
 Data can be extract from CIFTI functional files (`.dtseries.nii`) data using `nixtract-cifti`:
 
