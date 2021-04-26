@@ -14,6 +14,9 @@ extras = {
     'test': test_deps,
 }
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name='nixtract',
     version=__version__,
@@ -24,7 +27,8 @@ setup(
     maintainer_email="d.gale@queensu.ca",
     description=("A unified interface for timeseries extraction from different "
                  "functional neuroimaging file types"),
-    long_description=open('README.md').read(),
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/danjgale/nixtract',
     python_requires='>=3.6.0',
     install_requires=[
