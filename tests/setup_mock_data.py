@@ -34,19 +34,46 @@ def atlas_to_mask(img, label, out):
 
     Parameters
     ----------
-    img : str
-        File name of 3D label/atlas image
+    img : str or image object
+        File name or nibabel image object of 3D label/atlas image
     label : int
         Numeric label for region of interest
-    out : str
-        File name of output binary mask image
+    out : str or None
+        File name of output binary mask image, if None mask is not saved to file
     """
-    img = nib.load(img)
+
+    if isinstance(img,str):
+        img = nib.load(img)
     arr = img.get_fdata().copy()
     mask = np.where(arr == label, label, 0)
     out_img = nib.Nifti1Image(mask, affine=img.affine)
-    out_img.to_filename(out)
-    return out
+    if  out is None:
+        return out_img
+    else:
+        out_img.to_filename(out)
+        return out
+
+def atlas_labels_to_prob(atlas,out):
+    """Make a mock probabilistic atlas out of a labels atlas.
+
+    Parameters
+    ----------
+    atlas : str or image object
+        File name of 3D label/atlas image
+    """
+    if isinstance(atlas,str):
+        atlas = nib.load(atlas)
+    n_regions = len(np.unique(atlas.get_fdata())) - 1
+    mask_imgs = []
+    for i in range(1,n_regions+1):
+        img = atlas_to_mask(atlas,i,None)
+        mask_imgs.append(img)
+    out_atlas = nib.concat_images(mask_imgs)
+    if  out is None:
+        return out_atlas
+    else:
+        out_atlas.to_filename(out)
+        return out
 
 ## Gifti
 
@@ -300,6 +327,8 @@ def main():
     atlas_to_func(schaef_3d, schaef_4d)
     schaef_nifti_mask = 'data/mock/schaefer_LH_Vis_4.nii.gz'
     atlas_to_mask(schaef_3d, 4, schaef_nifti_mask)
+    schaef_prob = 'data/mock/schaefer_prob.nii.gz'
+    atlas_labels_to_prob(schaef_3d,schaef_prob)
 
     ## GIfTIs
     lh_annot = 'data/lh.Schaefer2018_100Parcels_7Networks_order.annot'

@@ -86,7 +86,6 @@ def _set_volume_masker(roi_file, as_voxels=False, **kwargs):
                 kwargs.pop('allow_overlap')
     
         roi_img = image.load_img(roi_file)
-
         if len(roi_img.shape) == 4:
             n_rois = roi_img.shape[-1]
             print('  {} region(s) detected from {}'.format(n_rois,
