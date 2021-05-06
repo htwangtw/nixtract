@@ -144,7 +144,9 @@ def test_coord_atlas(data_dir, mock_data, tmpdir):
     expected = np.tile(np.arange(1, 101), (10, 1))
     assert np.array_equal(actual.values, expected)
 
-def test_prob_atlas_difumo(data_dir, mock_data, tmpdir):
+
+def test_prob_atlas_shape(data_dir, mock_data, tmpdir):
+
     difumo = 'difumo64.nii.gz'
     roi_file = os.path.join(data_dir, difumo)
     func = os.path.join(mock_data, 'schaefer_func.nii.gz')
@@ -156,13 +158,15 @@ def test_prob_atlas_difumo(data_dir, mock_data, tmpdir):
 
     assert actual.shape[1] == 64
 
-def test_prob_atlas_mock_prob(data_dir, mock_data, tmpdir):
+
+def test_prob_vs_label_atlas(data_dir, mock_data, tmpdir):
+
     roi_file = os.path.join(data_dir, 'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.nii.gz')
     roi_file_prob = os.path.join(mock_data, 'schaefer_prob.nii.gz')
-    func = datasets.fetch_adhd(n_subjects=1,data_dir=str(tmpdir)).func[0]
+    func = datasets.fetch_adhd(n_subjects=1, data_dir=str(tmpdir)).func[0]
 
-    os.mkdir(os.path.join(tmpdir,'labels'))
-    os.mkdir(os.path.join(tmpdir,'prob'))
+    os.mkdir(os.path.join(tmpdir, 'labels'))
+    os.mkdir(os.path.join(tmpdir, 'prob'))
 
     cmd = (f"nixtract-nifti {tmpdir / 'labels'} --input_files {func} "
            f"--roi_file {roi_file}")
@@ -176,12 +180,8 @@ def test_prob_atlas_mock_prob(data_dir, mock_data, tmpdir):
     ts = pd.read_table(os.path.join(tmpdir, 'labels/' + ts_name)).to_numpy()
     ts_prob = pd.read_table(os.path.join(tmpdir, 'prob/' + ts_name)).to_numpy()
 
-    print(ts.shape)
-    print(ts_prob.shape)
-    print(ts[:,5])
-    print(ts_prob[:,5])
     for i in range(ts.shape[1]):
-        assert pearsonr(ts[:,i],ts_prob[:,i])[0] > 0.98
+        assert pearsonr(ts[:, i], ts_prob[:, i])[0] > 0.98
 
 
 def test_labels(data_dir, mock_data, tmpdir, nifti_label_config):

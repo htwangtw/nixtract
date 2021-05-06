@@ -4,6 +4,7 @@ import numpy as np
 import nibabel as nib
 import nibabel.cifti2 as ci
 
+
 ## Nifti
 
 def atlas_to_func(img, out, n=10):
@@ -29,7 +30,7 @@ def atlas_to_func(img, out, n=10):
     return out
 
 
-def atlas_to_mask(img, label, out):
+def atlas_to_mask(img, label, out=None):
     """Create a single-region mask
 
     Parameters
@@ -47,26 +48,26 @@ def atlas_to_mask(img, label, out):
     arr = img.get_fdata().copy()
     mask = np.where(arr == label, label, 0)
     out_img = nib.Nifti1Image(mask, affine=img.affine)
-    if  out is None:
+    if out is None:
         return out_img
     else:
         out_img.to_filename(out)
         return out
+
 
 def atlas_labels_to_prob(atlas,out):
     """Make a mock probabilistic atlas out of a labels atlas.
 
     Parameters
     ----------
-    atlas : str or image object
+    atlas : str
         File name of 3D label/atlas image
     """
-    if isinstance(atlas,str):
-        atlas = nib.load(atlas)
+    atlas = nib.load(atlas)
     n_regions = len(np.unique(atlas.get_fdata())) - 1
     mask_imgs = []
     for i in range(1,n_regions+1):
-        img = atlas_to_mask(atlas,i,None)
+        img = atlas_to_mask(atlas,i)
         mask_imgs.append(img)
     out_atlas = nib.concat_images(mask_imgs)
     if  out is None:
@@ -74,6 +75,7 @@ def atlas_labels_to_prob(atlas,out):
     else:
         out_atlas.to_filename(out)
         return out
+
 
 ## Gifti
 
@@ -316,6 +318,7 @@ def yeo_to_91k(dlabel, medial_wall, reference, out):
     out_dtseries.to_filename(out)
     return out
 
+
 def main():
 
     print('Setting up mock data...')
@@ -378,6 +381,7 @@ def main():
 
     gordon_L_SMhand_10_mask = 'data/mock/gordon_L_SMhand_10.dlabel.nii'
     dlabel_atlas_to_mask(gordon_cifti, 273, gordon_L_SMhand_10_mask)
+
 
 if __name__ == '__main__':
     main()
