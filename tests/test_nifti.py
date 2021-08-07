@@ -96,6 +96,20 @@ def test_mask(mock_data, tmpdir):
     actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
     expected = np.full((10, 1), 4)
     assert np.array_equal(actual.values, expected)
+
+
+def test_mask_with_tr(mock_data, tmpdir):
+    """Verify that TR accepts floats"""
+    roi_file = os.path.join(mock_data, 'schaefer_LH_Vis_4.nii.gz')
+    func = os.path.join(mock_data, 'schaefer_func.nii.gz')
+
+    cmd = (f"nixtract-nifti {tmpdir} --input_files {func} "
+           f"--roi_file {roi_file} --t_r 2.3")
+    subprocess.run(cmd.split())
+
+    actual = pd.read_table(os.path.join(tmpdir, 'schaefer_func_timeseries.tsv'))
+    expected = np.full((10, 1), 4)
+    assert np.array_equal(actual.values, expected)
     
 
 def test_as_voxels(mock_data, tmpdir):
