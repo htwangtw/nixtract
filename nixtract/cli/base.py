@@ -60,7 +60,7 @@ def base_cli(parser):
     parser.add_argument('--standardize', action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
                              'Default: False')
-    parser.add_argument('--t_r', type=int, 
+    parser.add_argument('--t_r', type=float, 
                         help='The TR of the functional files, specified in '
                              'seconds. Required if temporal '
                              'filtering/detrending is specified')
