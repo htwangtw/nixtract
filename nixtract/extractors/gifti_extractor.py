@@ -171,6 +171,7 @@ class GiftiExtractor(BaseExtractor):
 
         self.regressor_names = None
         self.regressor_array = None
+        self.sample_mask = None
 
     def discard_scans(self, n_scans):
         """Discard first N scans from data and regressors, if available
@@ -180,20 +181,17 @@ class GiftiExtractor(BaseExtractor):
         n_scans : int
             Number of initial scans to remove
         """
-        if self._lh:
-            self.lh_darray = self.lh_darray[:, n_scans:]
-        if self._rh:
-            self.rh_darray = self.rh_darray[:, n_scans:]
-
-        if self.regressor_array is not None:
-            self.regressor_array = self.regressor_array[n_scans:, :]
+        if n_scans is not None and n_scans > 0:
+            shape = self.darray.shape[0]
+            self.sample_mask = np.arange(shape)[n_scans:]
 
     def extract(self):
         """Extract timeseries"""
         if self._lh:
             self.show_extract_msg(self.lh_file)
             lh_tseries = mask_data(self.lh_darray.T, self.lh_roi,
-                                   self.regressor_array, self.as_vertices,
+                                   self.regressor_array, self.sample_mask,
+                                   self.as_vertices,
                                    self.pre_clean, **self._clean_kwargs)
             lh_tseries = label_timeseries(lh_tseries, self.lh_labels.values(),
                                           self.as_vertices)
@@ -204,7 +202,8 @@ class GiftiExtractor(BaseExtractor):
         if self._rh:
             self.show_extract_msg(self.rh_file)
             rh_tseries = mask_data(self.rh_darray.T, self.rh_roi,
-                                   self.regressor_array, self.as_vertices,
+                                   self.regressor_array, self.sample_mask,
+                                   self.as_vertices,
                                    self.pre_clean, **self._clean_kwargs)
             rh_tseries = label_timeseries(rh_tseries, self.rh_labels.values(),
                                              self.as_vertices)

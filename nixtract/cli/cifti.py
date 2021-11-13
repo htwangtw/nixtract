@@ -88,11 +88,11 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
         detrend=params['detrend']
     )
     if regressor_file is not None:
-        extractor.set_regressors(regressor_file, params['regressors'],
+        extractor.set_regressors(input_file,
+                                 regressor_file, params['regressors'],
                                  params["load_confounds_kwargs"])
 
-    if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
-        extractor.discard_scans(params['discard_scans'])
+    extractor.discard_scans(params['discard_scans'])
 
     extractor.extract()
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))

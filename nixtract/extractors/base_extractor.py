@@ -3,10 +3,9 @@ import os
 from datetime import datetime
 import numpy as np
 import pandas as pd
-import load_confounds
+from nilearn.input_data import fmriprep_confounds, fmriprep_confounds_strategy
 
-
-def _load_from_strategy(denoiser, fname):
+def _load_from_strategy(confound_tuple):
     """Verifies if load_confounds strategy is useable given the regressor files.
     load_confounds will raise it's own exception, but add an additional
     nixtract-specific exception that clarifies the incompatibility.
@@ -32,32 +31,30 @@ def _load_from_strategy(denoiser, fname):
                  'files. Check regressor files if they contain the appropriate '
                  'columns determined by load_confounds.')
     try:
-        confounds = denoiser.load(fname)
-        return confounds, denoiser.columns_
+        confounds, sample_mask = confound_tuple
+        return confounds, sample_mask, confounds.columns.tolist()
     except ValueError as e:
         raise ValueError(error_msg) from e
 
 
-def _load_predefined_strategy(regressors, regressor_file, kwargs=None):
+def _load_predefined_strategy(regressors, image_file, kwargs=None):
     """Read a pre-defined strategy from load_confounds"""
     if kwargs is not None:
-        cmd = 'load_confounds.{}(**kwargs)'.format(regressors)
+        confound_tuple = fmriprep_confounds_strategy(image_file, denoise_strategy=regressors, **kwargs)
     else:
-        cmd = 'load_confounds.{}()'.format(regressors)
-
-    denoiser = eval(cmd)
-    return _load_from_strategy(denoiser, regressor_file)
+        confound_tuple = fmriprep_confounds_strategy(image_file, denoise_strategy=regressors)
+    return _load_from_strategy(confound_tuple)
 
 
-def _load_flexible_strategy(regressors, regressor_file, kwargs=None):
+def _load_flexible_strategy(regressors, image_file, kwargs=None):
     """Load a flexible strategy from load_confounds"""
     if kwargs is not None:
         if "strategy" in kwargs:
             kwargs.pop('strategy')
-        denoiser = load_confounds.Confounds(strategy=regressors, **kwargs)
+        confound_tuple = fmriprep_confounds(image_file, strategy=regressors, **kwargs)
     else:
-        denoiser = load_confounds.Confounds(strategy=regressors)
-    return _load_from_strategy(denoiser, regressor_file)
+        confound_tuple = fmriprep_confounds(image_file, strategy=regressors)
+    return _load_from_strategy(confound_tuple)
 
 
 def _load_regressor_names(regressors, regressor_file):
@@ -72,7 +69,7 @@ def _load_regressor_names(regressors, regressor_file):
 
 class BaseExtractor(object):
 
-    def set_regressors(self, regressor_file, regressors=None,
+    def set_regressors(self, image_file, regressor_file, regressors=None,
                        load_confounds_kwargs=None):
         """Set regressors to be used with extraction
 
@@ -84,6 +81,8 @@ class BaseExtractor(object):
 
         Parameters
         ----------
+        image_file : str
+            Image file as the input for potential load_confounds strategey.
         regressor_file : str
             Regressor file where each column is a separate regressor. The
             first row must be column headers, i.e. regressor names
@@ -99,8 +98,7 @@ class BaseExtractor(object):
             Regressors is not a list or a str
         """
         # strategy options in load confounds
-        strategies = ['Params2', 'Params6', 'Params9', 'Params24', 'Params36',
-                      'AnatCompCor', 'TempCompCor']
+        strategies = ['simple', 'scrubbing', 'compcor', 'ica_aroma']
         flexible_strategies = ['motion', 'high_pass', 'wm_csf', 'compcor',
                                'global']
 
@@ -115,14 +113,15 @@ class BaseExtractor(object):
             self._load_confounds = False
 
         elif len(regressors) == 1 and (regressors[0] in strategies):
-            regs, names = _load_predefined_strategy(regressors[0],
-                                                    regressor_file,
-                                                    load_confounds_kwargs)
+            regs, sample_mask, names = _load_predefined_strategy(regressors[0],
+                                                                 image_file,
+                                                                 load_confounds_kwargs)
             self._load_confounds = True
 
         elif set(regressors) <= set(flexible_strategies):
-            regs, names = _load_flexible_strategy(regressors, regressor_file,
-                                                  load_confounds_kwargs)
+            regs, sample_mask, names = _load_flexible_strategy(regressors[0],
+                                                                 image_file,
+                                                                 load_confounds_kwargs)
             self._load_confounds = True
 
         elif all([x not in strategies + flexible_strategies
@@ -139,10 +138,13 @@ class BaseExtractor(object):
         self.regressor_file = regressor_file
         self.regressor_names = names
         self.regressor_array = regs
-
-        # impute initial NaN using load_confounds approach
-        mask = np.isnan(self.regressor_array[0, :])
-        self.regressor_array[0, mask] = self.regressor_array[1, mask]
+        if self._load_confounds:
+            self.sample_mask = sample_mask
+        else:
+            # impute initial NaN using load_confounds approach
+            mask = np.isnan(self.regressor_array[0, :])
+            self.regressor_array[0, mask] = self.regressor_array[1, mask]
+            self.sample_mask = None
 
     def check_extracted(self):
         """Check is extraction has been performed

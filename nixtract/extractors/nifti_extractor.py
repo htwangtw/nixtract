@@ -160,6 +160,7 @@ class NiftiExtractor(BaseExtractor):
         self.masker_type = self.masker.__class__.__name__
         self.regressor_names = None
         self.regressor_array = None
+        self.sample_mask = None
 
     def _get_default_labels(self):
         """Generate default numerical (1-indexed) labels depending on the
@@ -181,27 +182,28 @@ class NiftiExtractor(BaseExtractor):
                     for i in np.arange(self.masker.maps_img.shape[-1]) + 1]
 
     def discard_scans(self, n_scans):
-        """Discard first N scans from data and regressors, if available
+        """Discard first N scans from data and regressors.
+        overwrite by sample masker created by load_confound,
 
         Parameters
         ----------
         n_scans : int
             Number of initial scans to remove
         """
-        arr = self.img.get_data()
-        arr = arr[:, :, :, n_scans:]
-        self.img = nib.Nifti1Image(arr, self.img.affine)
-
-        if self.regressor_array is not None:
-            self.regressor_array = self.regressor_array[n_scans:, :]
-
+        if n_scans is not None and n_scans > 0:
+            if not self.sample_mask:
+                shape = self.img.shape[-1]
+                self.sample_mask = np.arange(shape)[n_scans:]
+        else:
+            self.sample_mask = None
         return self
 
     def extract(self):
         """Extract timeseries data using the determined nilearn masker"""
         self.show_extract_msg(self.fname)
         timeseries = self.masker.fit_transform(self.img,
-                                               confounds=self.regressor_array)
+                                               confounds=self.regressor_array,
+                                               sample_mask=self.sample_mask)
         self.timeseries = pd.DataFrame(timeseries)
 
         if self.labels is None:

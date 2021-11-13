@@ -183,26 +183,28 @@ class CiftiExtractor(BaseExtractor):
                                                                 self.dtseries)
         self.regressor_names = None
         self.regressor_array = None
+        self.sample_mask = None
 
     def discard_scans(self, n_scans):
-        """Discard first N scans from data and regressors, if available
+        """Discard first N scans or volumns in sample maskerfrom data and
+        regressors, if available
 
         Parameters
         ----------
         n_scans : int
             Number of initial scans to remove
         """
-        self.darray = self.darray[n_scans:, :]
-
-        if self.regressor_array is not None:
-            self.regressor_array = self.regressor_array[n_scans:, :]
+        if n_scans is not None and n_scans > 0:
+            shape = self.darray.shape[0]
+            self.sample_mask = np.arange(shape)[n_scans:]
 
     def extract(self):
         """Extract timeseries"""
         self.show_extract_msg(self.fname)
         tseries = mask_data(self.darray, self.dlabel_array,
-                            self.regressor_array, self.as_vertices,
-                            self.pre_clean, **self._clean_kwargs)
+                            self.regressor_array, self.sample_mask,
+                            self.as_vertices, self.pre_clean,
+                            **self._clean_kwargs)
         self.timeseries = label_timeseries(tseries, self.labels,
                                            self.as_vertices)
         # remove extracted background signal if any

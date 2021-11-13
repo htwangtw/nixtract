@@ -42,7 +42,7 @@ def _mask(darray, roi, as_vertices=False):
     return timeseries
 
 
-def mask_data(darray, roi, regressors=None, as_vertices=False,
+def mask_data(darray, roi, regressors=None, sample_mask=None, as_vertices=False,
               pre_clean=False, **kwargs):
     """[summary]
 
@@ -53,6 +53,8 @@ def mask_data(darray, roi, regressors=None, as_vertices=False,
     roi : numpy.ndarray, (n_vertices,)
         Vertices with integer labels denoting the regions
     regressors : numpy.ndarray, optional
+        Confound regressors to regress from timeseries, by default None
+    sample_mask : numpy.ndarray, optional
         Confound regressors to regress from timeseries, by default None
     as_vertices : bool, optional
         Extract all vertices beloging to a label in roi. Only possible when
@@ -68,11 +70,11 @@ def mask_data(darray, roi, regressors=None, as_vertices=False,
     """
     x = darray.copy()
     if pre_clean:
-        x = signal.clean(x, confounds=regressors, **kwargs)
+        x = signal.clean(x, confounds=regressors, sample_mask=sample_mask, **kwargs)
         return _mask(x, roi, as_vertices)
     else:
         timeseries = _mask(x, roi, as_vertices)
-        out = signal.clean(timeseries, confounds=regressors, **kwargs)
+        out = signal.clean(timeseries, confounds=regressors, sample_mask=sample_mask, **kwargs)
         return out
 
 

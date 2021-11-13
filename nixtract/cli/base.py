@@ -258,7 +258,8 @@ def _make_regressor_file(outputs, out_dir):
     reg_dict = {}
     for fname, extractor in outputs:
         if extractor.regressor_names is not None:
-            reg_dict[fname] = list(extractor.regressor_names)
+            reg_dict[fname] = {"sample_mask": extractor.sample_mask.tolist(),
+                               "regressor_columns": list(extractor.regressor_names)}
 
     if len(reg_dict) != 0:
         # check if all extractors used load_confounds
