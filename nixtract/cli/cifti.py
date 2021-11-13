@@ -22,7 +22,7 @@ def _cli_parser():
                              'the file pattern. If so, these files are '
                              'naturally sorted by file name prior to '
                              'extraction')
-    parser.add_argument('--roi_file', type=str, 
+    parser.add_argument('--roi_file', type=str,
                         help='CIFTI dlabel file (.dlabel.nii) with one or more '
                              'labels')
     # other
@@ -38,8 +38,8 @@ def _cli_parser():
                              'regression) before timeseries extraction. '
                              'Otherwise, denoising is done on the extracted '
                              'timeseries, which is consistent with nilearn and '
-                             'is more computationally efficient. Default: False')                  
-    parser = base_cli(parser)                         
+                             'is more computationally efficient. Default: False')
+    parser = base_cli(parser)
     return parser.parse_args()
 
 
@@ -57,7 +57,7 @@ def _check_cifti_params(params):
 
     if not params['roi_file']:
         raise ValueError('Missing roi_file input.')
-    
+
     return params
 
 
@@ -69,26 +69,26 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
     input_files : str
         File path of the input .dtseries.nii file
     roi_file : str
-        File path of the input .dlabel.nii file. 
+        File path of the input .dlabel.nii file.
     regressor_file : str
         File path of regressor file
     params : dict
         Parameter dictionary for extraction
     """
     extractor = CiftiExtractor(
-        fname=input_file, 
+        fname=input_file,
         roi_file=roi_file,
         as_vertices=params['as_vertices'],
         verbose=params['verbose'],
         pre_clean=params['denoise_pre_extract'],
-        standardize=params['standardize'], 
-        t_r=params['t_r'], 
-        high_pass=params['high_pass'], 
-        low_pass=params['low_pass'], 
+        standardize=params['standardize'],
+        t_r=params['t_r'],
+        high_pass=params['high_pass'],
+        low_pass=params['low_pass'],
         detrend=params['detrend']
     )
     if regressor_file is not None:
-        extractor.set_regressors(regressor_file, params['regressors'], 
+        extractor.set_regressors(regressor_file, params['regressors'],
                                  params["load_confounds_kwargs"])
 
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
@@ -99,7 +99,7 @@ def extract_cifti(input_file, roi_file, regressor_file, params):
     extractor.save(out, params['n_decimals'])
 
     return out, extractor
-    
+
 
 def main():
     params = vars(_cli_parser())
@@ -107,7 +107,7 @@ def main():
     metadata_path = make_param_file(params)
     shutil.copy2(params['roi_file'], metadata_path)
 
-    run_extraction(extract_cifti, params['input_files'], params['roi_file'], 
+    run_extraction(extract_cifti, params['input_files'], params['roi_file'],
                    params)
 
 
@@ -115,4 +115,3 @@ if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/cifti.py` should not be run directly. "
                        "Please `pip install` nixtract and use the "
                        "`nixtract-cifti` command.")
-

@@ -2,25 +2,25 @@
 
 Check to ensure that the data being extracted lines up with the labels defined
 in the provided roi files. The approach is fairly straightforward:
-    1. Take an annot file a) make label.gii version and b) and duplicate the 
-       data (10 times) so that it creates a mock func.gii file. This is 
-       performed once per user by `setup_mock_data.py`, which is ran by the 
-       `mock_data` pytest fixture. 
-    2. Run nixtract-gifti on the mock func.gii with the annot or label.gii as 
+    1. Take an annot file a) make label.gii version and b) and duplicate the
+       data (10 times) so that it creates a mock func.gii file. This is
+       performed once per user by `setup_mock_data.py`, which is ran by the
+       `mock_data` pytest fixture.
+    2. Run nixtract-gifti on the mock func.gii with the annot or label.gii as
        the roi_file
     3. Validate extracted timeseries against the expected array, which has 10
-       rows (number of timepoints) and N columns, where N = number of labels 
-       in dlabel (excluding 0). Each column should only have elements that 
+       rows (number of timepoints) and N columns, where N = number of labels
+       in dlabel (excluding 0). Each column should only have elements that
        equal the label number (i.e. column 1 should be full of 1's).
 
 These approach is applied to both hemispheres, as well as each separately.
 
-A very similar approach is used to check the `--as_vertcies` functionality, 
+A very similar approach is used to check the `--as_vertcies` functionality,
 where 1) all values in the timeseries should equal the label, and 2) the number
 of columns should equal the number of vertices with that label in the annot or
 func.gii file. Binary masks for these tests are created in `setup_mock_data.py`.
 
-The Schaefer atlas (100 region, 7 networks) in fsaverage5-space is used. 
+The Schaefer atlas (100 region, 7 networks) in fsaverage5-space is used.
 
 Additional checks where scans are discarded and regressors are used are also
 performed, which are some basic functionalities of `GiftiExtractor`.
@@ -34,7 +34,7 @@ import pandas as pd
 from nilearn import signal
 
 def test_annot(data_dir, mock_data, tmpdir):
-    
+
     schaef = '.Schaefer2018_100Parcels_7Networks_order.annot'
     lh_annot = os.path.join(data_dir, 'lh' + schaef)
     rh_annot = os.path.join(data_dir, 'rh' + schaef)
@@ -127,7 +127,7 @@ def test_gifti_label(mock_data, tmpdir):
 
 
 def test_annot_mask(mock_data, tmpdir):
-    
+
     # LEFT HEMISPHERE
     lh_annot = os.path.join(mock_data, 'schaefer_LH_Vis_4.annot')
     lh_func = os.path.join(mock_data, 'schaefer_hemi-L.func.gii')
@@ -160,7 +160,7 @@ def test_annot_mask(mock_data, tmpdir):
 
 
 def test_annot_mask_vertices(mock_data, tmpdir):
-    
+
     lh_annot = os.path.join(mock_data, 'schaefer_LH_Vis_4.annot')
     lh_func = os.path.join(mock_data, 'schaefer_hemi-L.func.gii')
 
@@ -198,7 +198,7 @@ def test_annot_mask_vertices(mock_data, tmpdir):
 
 
 def test_label_mask(mock_data, tmpdir):
-    
+
     # LEFT HEMISPHERE
     lh_label = os.path.join(mock_data, 'schaefer_LH_Vis_4.label.gii')
     lh_func = os.path.join(mock_data, 'schaefer_hemi-L.func.gii')
@@ -266,7 +266,7 @@ def test_label_mask_vertices(mock_data, tmpdir):
 
     expected_hemi = np.full((10, n_vertices), fill_value=4)
     assert np.array_equal(actual, expected_hemi)
-    
+
 
 def test_discard_scans(mock_data, tmpdir):
 
@@ -296,7 +296,7 @@ def test_regressors(mock_data, tmpdir, basic_regressor_config):
     config_file = os.path.join(tmpdir, 'config.json')
     with open(config_file, 'w') as fp:
         json.dump(basic_regressor_config, fp)
-    
+
     lh_label = os.path.join(mock_data, 'schaefer_hemi-L.label.gii')
     rh_label = os.path.join(mock_data, 'schaefer_hemi-R.label.gii')
 
@@ -315,10 +315,10 @@ def test_regressors(mock_data, tmpdir, basic_regressor_config):
 
     expected_hemi = np.tile(np.arange(1, 51), (10, 1))
     expected = np.concatenate([expected_hemi, expected_hemi], axis=1)
-    
-    regressors = pd.read_table(basic_regressor_config['regressor_files'], 
+
+    regressors = pd.read_table(basic_regressor_config['regressor_files'],
                                usecols=basic_regressor_config['regressors'])
-    expected = signal.clean(expected, confounds=regressors, standardize=False, 
+    expected = signal.clean(expected, confounds=regressors, standardize=False,
                             detrend=False)
     assert np.allclose(actual, expected)
 
@@ -335,6 +335,6 @@ def test_regressors(mock_data, tmpdir, basic_regressor_config):
     expected_hemi = np.tile(np.arange(1, 51), (7, 1))
     expected = np.concatenate([expected_hemi, expected_hemi], axis=1)
     regressors = regressors.values[3:, :]
-    expected = signal.clean(expected, confounds=regressors, standardize=False, 
+    expected = signal.clean(expected, confounds=regressors, standardize=False,
                             detrend=False)
     assert np.allclose(actual, expected)

@@ -22,7 +22,7 @@ import pkg_resources  # for nixtract itself
 
 def base_cli(parser):
     """Generate CLI with arguments shared among all interfaces"""
-    
+
     parser.add_argument('out_dir', type=str,
                         help='The path to the output directory. Created if it'
                              'does not already exist')
@@ -50,37 +50,37 @@ def base_cli(parser):
                              'regressor information provided but regressor '
                              'files are provided, then all regressors in '
                              'regressor files are used')
-    parser.add_argument('--load_confounds_kwargs', type=str, 
+    parser.add_argument('--load_confounds_kwargs', type=str,
                         help="Keyword arguments for load confound either "
                              "predefined or flexible strategies. Input must be "
-                             "a Python dictionary wrapped in double quotes. " 
+                             "a Python dictionary wrapped in double quotes. "
                              "Refer to documentation for the available "
                              "arguments for each load confound strategy: "
-                             "https://github.com/SIMEXP/load_confounds")                    
+                             "https://github.com/SIMEXP/load_confounds")
     parser.add_argument('--standardize', action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
                              'Default: False')
-    parser.add_argument('--t_r', type=float, 
+    parser.add_argument('--t_r', type=float,
                         help='The TR of the functional files, specified in '
                              'seconds. Required if temporal '
                              'filtering/detrending is specified')
-    parser.add_argument('--high_pass', type=float, 
+    parser.add_argument('--high_pass', type=float,
                         help='High pass filter cut off in Hertz. Do not use if '
                              'high pass cosine regressors are specified in '
                              '`regressors`')
-    parser.add_argument('--low_pass', type=float, 
+    parser.add_argument('--low_pass', type=float,
                         help='Low pass filter cut off in Hertz. Do not use if '
                              'low pass cosine regressors are specified in '
                              '`regressors`')
     parser.add_argument('--detrend', action='store_true', default=False,
                         help='Temporally detrend the data. Default: False')
-    parser.add_argument('--discard_scans', type=int, 
+    parser.add_argument('--discard_scans', type=int,
                         help='Discard the first N scans of each functional '
                              'image')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='The number of CPUs to use if parallelization is '
                              'desired. Default: 1 (serial processing)')
-    parser.add_argument('--n_decimals', type=int, 
+    parser.add_argument('--n_decimals', type=int,
                         help='Specify the number of decimals for output '
                              'timeseries files. Fewer decimals are recommended '
                              'for reducing disk-space, particularly for large '
@@ -91,7 +91,7 @@ def base_cli(parser):
                              'the same parameter is specified in both. See '
                              'online documentation for formatting and what '
                              'keys to include')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, 
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='Print out extraction progress')
     return parser
 
@@ -105,7 +105,7 @@ def empty_to_none(x):
 
 
 def merge_params(params, config):
-    """Merge CLI params with configuration file params. Configuration params 
+    """Merge CLI params with configuration file params. Configuration params
     will overwrite the CLI params.
     """
     return {**params, **config}
@@ -117,7 +117,7 @@ def check_glob(x):
     Parameters
     ----------
     x : str, list
-        A glob pattern string or a list of files. If a list, glob pattern 
+        A glob pattern string or a list of files. If a list, glob pattern
         matching is not performed.
 
     Returns
@@ -141,13 +141,13 @@ def check_glob(x):
 
 def _parse_input_str(x):
     """Safely parse input dictionary string for load_confound_kwargs
-    
+
     Only permits strings, numbers, tuples, lists, dicts, booleans, and None.
     """
     try:
         return ast.literal_eval(x)
     except ValueError as e:
-        raise ValueError("Invalid dictionary string in load_confound_kwargs")  
+        raise ValueError("Invalid dictionary string in load_confound_kwargs")
 
 
 def handle_base_args(params):
@@ -276,31 +276,31 @@ def run_extraction(extract_func, input_files, roi_file, params):
     extraction function defined per file type, each defined in their respective
     module (see `extract_func` parameter for each). These functions are roughly
     the same, with extract_gifti being the biggest exception because it has to
-    handle left and/or right hemipsheres. 
+    handle left and/or right hemipsheres.
 
-    Most of the extraction parameters are specified in `params`, including 
+    Most of the extraction parameters are specified in `params`, including
     n_jobs, which `run_extraction` uses to parallelize extraction if specified.
-    Note that `input_files`, `roi_file`, and `regressor_files` should also all 
-    be in params; they are explictly in this function so that it can be 
-    generalizeable across file types (thanks to GIFTIs being the way they 
-    are...). 
-    
+    Note that `input_files`, `roi_file`, and `regressor_files` should also all
+    be in params; they are explictly in this function so that it can be
+    generalizeable across file types (thanks to GIFTIs being the way they
+    are...).
+
     Parameters
     ----------
-    extract_func : nixtract.cli.nifti.extract_nifti, 
+    extract_func : nixtract.cli.nifti.extract_nifti,
                    nixtract.cli.gifti.extract_gifti, or
                    nixtract.cli.cifti.extract_cifti
         Extraction function for the file type of input_files
     input_files : list
-        List of input files for extraction. If extract_func is 
+        List of input files for extraction. If extract_func is
         nixtract.cli.gifti.extract_gifti, then list must have tuples in which
         each tuple is (left, right) hemisphere input files
     roi_file : str or tuple
-        File that defines regions of interest(s). If extract_func is 
+        File that defines regions of interest(s). If extract_func is
         nixtract.cli.gifti.extract_gifti, then must be a tuple containing each
-        hemisphere, i.e. (left, right) 
+        hemisphere, i.e. (left, right)
     regressor_files : list
-        List of regressor files to pair with input_files. Should be in the 
+        List of regressor files to pair with input_files. Should be in the
         same order.
     params : dict
         Input parameter dictionary
@@ -308,7 +308,7 @@ def run_extraction(extract_func, input_files, roi_file, params):
     regressor_files = params['regressor_files']
     if regressor_files is None:
         regressor_files = [regressor_files] * len(input_files)
-    
+
     if len(regressor_files) != len(input_files):
         raise ValueError('Number of regressor files do not equal number of input files')
 
@@ -317,14 +317,14 @@ def run_extraction(extract_func, input_files, roi_file, params):
     if n_jobs == 1:
         res = []
         for i, in_file in enumerate(input_files):
-            out, extractor = extract_func(in_file, roi_file, 
+            out, extractor = extract_func(in_file, roi_file,
                                           regressor_files[i], params)
             res.append((out, extractor))
     else:
         args = zip(
             input_files,
             repeat(roi_file),
-            regressor_files, 
+            regressor_files,
             repeat(params)
         )
         with multiprocessing.Pool(processes=n_jobs) as pool:

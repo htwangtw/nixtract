@@ -26,7 +26,7 @@ def mock_data(rootdir, data_dir):
     mock_dir = os.path.join(data_dir, 'mock')
     if not os.path.exists(mock_dir):
         subprocess.run("python setup_mock_data.py".split(), cwd=rootdir)
-    
+
     return mock_dir
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def basic_regressor_config(data_dir):
 @pytest.fixture
 def nifti_label_config(data_dir):
     schaef = 'Schaefer2018_100Parcels_7Networks_order_FSLMNI152_2mm.Centroid_XYZ.tsv'
-    labels = pd.read_table(os.path.join(data_dir, schaef), 
+    labels = pd.read_table(os.path.join(data_dir, schaef),
                            usecols=['ROI Name'])
     config = {
         'labels': labels['ROI Name'].tolist()

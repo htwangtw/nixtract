@@ -38,11 +38,11 @@ def _mask(darray, roi, as_vertices=False):
         for i, l in enumerate(labels):
             mask = (roi.ravel() == l)
             timeseries[:, i] = darray[:, mask].mean(axis=1)
-    
+
     return timeseries
 
 
-def mask_data(darray, roi, regressors=None, as_vertices=False, 
+def mask_data(darray, roi, regressors=None, as_vertices=False,
               pre_clean=False, **kwargs):
     """[summary]
 
@@ -83,7 +83,7 @@ def label_timeseries(tseries, labels, as_vertices):
     ----------
     tseries : numpy.ndarray, (n timepoints, n timeseries)
         Extracted timeseries
-    labels : list, 
+    labels : list,
         Timeseries labels, must equal number of timeseries in tseries
     as_vertices : [type]
         If timeseries is all vertices. If False, then assume each column in
@@ -92,7 +92,7 @@ def label_timeseries(tseries, labels, as_vertices):
     Returns
     -------
     pandas.DataFrame
-        Data table containing each timeseries with labels as column headers 
+        Data table containing each timeseries with labels as column headers
     """
     if as_vertices:
         cols = [f'vert{i}' for i in np.arange(tseries.shape[1])]

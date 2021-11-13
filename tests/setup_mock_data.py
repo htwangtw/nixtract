@@ -11,9 +11,9 @@ def atlas_to_func(img, out, n=10):
     """Create a mock functional (4D) data file
 
     The resulting 4th dimension will contain volumetric duplicates of the
-    provided 3D image. This enables a way to verify that expected data is 
-    correctly extracted (e.g., label 1 should extract a timeseries of all 1's, 
-    etc).  
+    provided 3D image. This enables a way to verify that expected data is
+    correctly extracted (e.g., label 1 should extract a timeseries of all 1's,
+    etc).
 
     Parameters
     ----------
@@ -103,9 +103,9 @@ def make_binary_annot(annot_file, label, out):
 def annot_to_func(annot_file, out, n=10):
     """Create a mock func.gii from an annotation file
 
-    All timepoints (darrays) in .func.gii are duplicates of the annotation 
-    array. This enables a way to verify that expected data is correctly 
-    extracted (e.g., label 1 should extract a timeseries of all 1's, etc).  
+    All timepoints (darrays) in .func.gii are duplicates of the annotation
+    array. This enables a way to verify that expected data is correctly
+    extracted (e.g., label 1 should extract a timeseries of all 1's, etc).
 
     Parameters
     ----------
@@ -119,14 +119,14 @@ def annot_to_func(annot_file, out, n=10):
     annot = nib.freesurfer.read_annot(annot_file)
     darrays = []
     for i in range(n):
-        x = nib.gifti.GiftiDataArray(annot[0], 
+        x = nib.gifti.GiftiDataArray(annot[0],
                                      intent='NIFTI_INTENT_TIME_SERIES',
                                      datatype='NIFTI_TYPE_FLOAT32')
         darrays.append(x)
     img = nib.GiftiImage(darrays=darrays)
     img.to_filename(out)
     return out
- 
+
 
 def annot_to_gifti(annot_file, out):
     """Converts FreeSurfer-style annotation file `atlas` to a label.gii
@@ -188,8 +188,8 @@ def dlabel_to_dtseries(dlabel, out, n=10):
     """Create a mock .dtseries.nii from an .dlabel file
 
     All timepoints (rows) in .dtseries.nii are duplicates of the .dlabel array.
-    This enables a way to verify that expected data is correctly extracted 
-    (e.g., label 1 should extract a timeseries of all 1's, etc). 
+    This enables a way to verify that expected data is correctly extracted
+    (e.g., label 1 should extract a timeseries of all 1's, etc).
 
     Parameters
     ----------
@@ -207,17 +207,17 @@ def dlabel_to_dtseries(dlabel, out, n=10):
     label_array = dlabel.get_fdata().ravel()
     tseries = np.tile(label_array, (n, 1))
     data_map = ci.Cifti2MatrixIndicesMap(
-        applies_to_matrix_dimension=(0, ), 
+        applies_to_matrix_dimension=(0, ),
         indices_map_to_data_type='CIFTI_INDEX_TYPE_SERIES',
-        number_of_series_points=tseries.shape[0], 
-        series_start=0, 
+        number_of_series_points=tseries.shape[0],
+        series_start=0,
         series_step=2,
         series_exponent=0,
         series_unit='SECOND'
     )
     # take brain models from dlabel
     model_map = ci.Cifti2MatrixIndicesMap(
-        applies_to_matrix_dimension=(1, ), 
+        applies_to_matrix_dimension=(1, ),
         indices_map_to_data_type='CIFTI_INDEX_TYPE_BRAIN_MODELS',
         maps=list(dlabel.header.get_index_map(1).brain_models)
     )
@@ -231,13 +231,13 @@ def dlabel_to_dtseries(dlabel, out, n=10):
     matrix.append(model_map)
     hdr = ci.Cifti2Header(matrix)
 
-    out_dtseries = ci.Cifti2Image(tseries, hdr) 
+    out_dtseries = ci.Cifti2Image(tseries, hdr)
     out_dtseries.to_filename(out)
     return out
 
 
 def dlabel_atlas_to_mask(dlabel, label, out):
-    """Convert an atlas to a single region (i.e. binary) mask 
+    """Convert an atlas to a single region (i.e. binary) mask
 
     Parameters
     ----------
@@ -257,14 +257,14 @@ def dlabel_atlas_to_mask(dlabel, label, out):
 
 
 def yeo_to_91k(dlabel, medial_wall, reference, out):
-    """Convert Yeo-style dlabels (Yeo and Schaefer parcellations) to 91k 
+    """Convert Yeo-style dlabels (Yeo and Schaefer parcellations) to 91k
     grayordinate space
-    
-    The Yeo lab generates dlabel's inclusive of medial wall vertices and only 
-    for the cortical surfaces. This is different from how typical dlabels are 
-    formatted, which exclude medial wall vertices and include voxels from all 
-    subcortical and cerebellar structures (i.e. the full 91k grayordinate 
-    space). This function corrects Yeo dlabels to proper 91k grayordinates.  
+
+    The Yeo lab generates dlabel's inclusive of medial wall vertices and only
+    for the cortical surfaces. This is different from how typical dlabels are
+    formatted, which exclude medial wall vertices and include voxels from all
+    subcortical and cerebellar structures (i.e. the full 91k grayordinate
+    space). This function corrects Yeo dlabels to proper 91k grayordinates.
 
     Parameters
     ----------
@@ -273,7 +273,7 @@ def yeo_to_91k(dlabel, medial_wall, reference, out):
     medial_wall : str
         HCP medial wall mask (.dlabel.nii)
     reference : str
-        A reference .dlabel.nii file with 91k grayordinates and all brain 
+        A reference .dlabel.nii file with 91k grayordinates and all brain
         models included
     out : str
         Output 91k grayordinate .dlabel.nii file
@@ -289,21 +289,21 @@ def yeo_to_91k(dlabel, medial_wall, reference, out):
     # expand to 91k
     grayordinates = np.zeros(ref.shape)
     grayordinates[0, :corrected_array.shape[0]] = corrected_array
-    
+
     # make header
     labels = dlabel.header.get_axis(index=0).label[0]
     label_table = ci.Cifti2LabelTable()
     for key, (tag, rgba) in labels.items():
         label_table[key] = ci.Cifti2Label(key, tag, *rgba)
-    
+
     maps = [ci.Cifti2NamedMap('labels', ci.Cifti2MetaData({}), label_table)]
     label_map = ci.Cifti2MatrixIndicesMap(
-        applies_to_matrix_dimension=(0, ), 
+        applies_to_matrix_dimension=(0, ),
         indices_map_to_data_type='CIFTI_INDEX_TYPE_LABELS',
         maps=maps
     )
     model_map = ci.Cifti2MatrixIndicesMap(
-        applies_to_matrix_dimension=(1, ), 
+        applies_to_matrix_dimension=(1, ),
         indices_map_to_data_type='CIFTI_INDEX_TYPE_BRAIN_MODELS',
         maps=list(ref.header.get_index_map(1).brain_models)
     )
@@ -314,7 +314,7 @@ def yeo_to_91k(dlabel, medial_wall, reference, out):
     matrix.append(model_map)
     hdr = ci.Cifti2Header(matrix)
 
-    out_dtseries = ci.Cifti2Image(grayordinates, hdr) 
+    out_dtseries = ci.Cifti2Image(grayordinates, hdr)
     out_dtseries.to_filename(out)
     return out
 
@@ -363,7 +363,7 @@ def main():
     schaef_cifti =  'data/Schaefer2018_100Parcels_7Networks_order.dlabel.nii'
     gordon_cifti = 'data/Gordon333_FreesurferSubcortical.32k_fs_LR.dlabel.nii'
     mwall = 'data/Human.MedialWall_Conte69.32k_fs_LR.dlabel.nii'
-    
+
     schaef_91k = 'data/mock/schaefer_91k.dlabel.nii'
     schaef_91k = yeo_to_91k(schaef_cifti, mwall, gordon_cifti, schaef_91k)
 

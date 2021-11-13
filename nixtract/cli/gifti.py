@@ -31,11 +31,11 @@ def _cli_parser():
                              'so, these files are naturally sorted by file '
                              'name prior to extraction')
     # roi files
-    parser.add_argument('--lh_roi_file', type=str, 
+    parser.add_argument('--lh_roi_file', type=str,
                         help='A label GIFTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the left hemipshere. '
                              'Must include one or more labels')
-    parser.add_argument('--rh_roi_file', type=str, metavar='roi_file', 
+    parser.add_argument('--rh_roi_file', type=str, metavar='roi_file',
                         help='A label GIFTI file (.label.gii) or a Freesurfer '
                              'annotation file (.annot) for the right hemipshere. '
                              'Must include one or more labels')
@@ -53,8 +53,8 @@ def _cli_parser():
                              'regression) before timeseries extraction. '
                              'Otherwise, denoising is done on the extracted '
                              'timeseries, which is consistent with nilearn and '
-                             'is more computationally efficient. Default: False')                
-    parser = base_cli(parser)                         
+                             'is more computationally efficient. Default: False')
+    parser = base_cli(parser)
     return parser.parse_args()
 
 
@@ -88,19 +88,19 @@ def _set_out_fname(input_files, out_dir):
     """Make output _timeseries.tsv filename based on what hemisphere are
     provided
 
-    If left and right hemispheres are given, then file will be labeled 
-    'hemi-LR'. Otherwise, the hemisphere label will be the same as the 
-    provided hemisphere. 
+    If left and right hemispheres are given, then file will be labeled
+    'hemi-LR'. Otherwise, the hemisphere label will be the same as the
+    provided hemisphere.
 
-    This is a a validation function too, as it checks for the hemisphere label 
+    This is a a validation function too, as it checks for the hemisphere label
     and also checks to make sure that at least one hemisphere is given.
 
     Parameters
     ----------
     input_files : tuple
-        Left and right hemisphere input files: (left, right). At least one 
+        Left and right hemisphere input files: (left, right). At least one
         must not be None. BIDS hemisphere labels ('hemi-L', 'hemi-R') must
-        be in file names. 
+        be in file names.
     out_dir : str
         Output directory
 
@@ -112,7 +112,7 @@ def _set_out_fname(input_files, out_dir):
     Raises
     ------
     ValueError
-        No hemisphere label is in input files 
+        No hemisphere label is in input files
     ValueError
         No hemipshere input files provided
     """
@@ -140,12 +140,12 @@ def extract_gifti(input_files, roi_file, regressor_file, params):
     ----------
     input_files : tuple
         Tuple of left and right hemisphere func.gii files, (left, right). If
-        only one hemisphere is desired, then the other hemisphere can be 
-        specified as None, e.g., left only: (left, None).  
+        only one hemisphere is desired, then the other hemisphere can be
+        specified as None, e.g., left only: (left, None).
     roi_file : tuple
         Tuple of left and right hemisphere label.gii files, (left, right). If
-        only one hemisphere is desired, then the other hemisphere can be 
-        specified as None, e.g., left only: (left, None).  
+        only one hemisphere is desired, then the other hemisphere can be
+        specified as None, e.g., left only: (left, None).
     regressor_file : str
         File path of regressor file
     params : dict
@@ -162,24 +162,24 @@ def extract_gifti(input_files, roi_file, regressor_file, params):
         as_vertices=params['as_vertices'],
         verbose=params['verbose'],
         pre_clean=params['denoise_pre_extract'],
-        standardize=params['standardize'], 
-        t_r=params['t_r'], 
-        high_pass=params['high_pass'], 
-        low_pass=params['low_pass'], 
+        standardize=params['standardize'],
+        t_r=params['t_r'],
+        high_pass=params['high_pass'],
+        low_pass=params['low_pass'],
         detrend=params['detrend']
     )
     if regressor_file is not None:
-        extractor.set_regressors(regressor_file, params['regressors'], 
+        extractor.set_regressors(regressor_file, params['regressors'],
                                  params["load_confounds_kwargs"])
 
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
-    
+
     extractor.extract()
     extractor.save(out, params['n_decimals'])
 
     return out, extractor
-    
+
 
 def main():
     params = vars(_cli_parser())
@@ -200,4 +200,3 @@ if __name__ == '__main__':
     raise RuntimeError("`nixtract/cli/gifti.py` should not be run directly. "
                        "Please `pip install` nixtract and use the "
                        "`nixtract-gifti` command.")
-

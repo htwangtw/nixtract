@@ -44,7 +44,7 @@ def _get_models(img):
     models = {}
     for i, m in enumerate(brain_models):
         struct = m.brain_structure
-        models[struct] = {'count': m.index_count, 'offset': m.index_offset, 
+        models[struct] = {'count': m.index_count, 'offset': m.index_offset,
                           'model_index': i, 'type': m.model_type}
         if m.model_type == 'CIFTI_MODEL_TYPE_SURFACE':
             models[struct]['n_indices'] = m.surface_number_of_vertices
@@ -54,16 +54,16 @@ def _get_models(img):
             models[struct]['indices'] = np.arange(m.index_count)
 
     # ensure sorted by offset
-    models = {k: v for k, v in sorted(models.items(), 
+    models = {k: v for k, v in sorted(models.items(),
                                       key=lambda x: x[1]['offset'])}
     return models
-    
+
 
 def _has_medwall(model):
-    """Check if structure has medial wall, which is when the model count is 
+    """Check if structure has medial wall, which is when the model count is
     equal to the number of vertices. Always false for non surface models
     """
-    if ((model['type'] == 'CIFTI_MODEL_TYPE_SURFACE') and 
+    if ((model['type'] == 'CIFTI_MODEL_TYPE_SURFACE') and
         (model['count'] == model['n_indices'])):
         return True
     else:
@@ -73,12 +73,12 @@ def _has_medwall(model):
 def _load_and_align_ciftis(dlabel, dtseries):
     """Correctly align the dlabel with the dtseries data
 
-    If dlabel and dtseries have the same number of elements, then they are 
+    If dlabel and dtseries have the same number of elements, then they are
     already aligned, and are each plainly loaded. If not, then iterate through
-    the brain models in dtseries and check vertex alignment of surface models, 
+    the brain models in dtseries and check vertex alignment of surface models,
     and the existence of volume models. This will happen if a) dlabel includes
     medial wall vertices but dtseries does not or vice versa, or b) if dlabel
-    does not have all the brain models found in dtseries. 
+    does not have all the brain models found in dtseries.
 
     Parameters
     ----------
@@ -115,7 +115,7 @@ def _load_and_align_ciftis(dlabel, dtseries):
         dlabel_list = []
         dtseries_list = []
         for k, v in dts_models.items():
-  
+
             if k not in dl_models.keys():
                 # dlabel does not have the brain model
                 continue
@@ -135,15 +135,15 @@ def _load_and_align_ciftis(dlabel, dtseries):
             else:
                 # no medial wall in both but also not equal
                 raise ValueError('Cannot align dlabel with dtseries.')
-            
+
             dlabel_list.append(dlabel_data[dl_idx])
             dtseries_list.append(dtseries_data[:, dts_idx])
 
         return np.hstack(dlabel_list), np.hstack(dtseries_list)
-            
+
 
 class CiftiExtractor(BaseExtractor):
-    def __init__(self, fname, roi_file, as_vertices=False, pre_clean=False, 
+    def __init__(self, fname, roi_file, as_vertices=False, pre_clean=False,
                  verbose=False, **kwargs):
         """Cifti extraction class
 
@@ -152,40 +152,40 @@ class CiftiExtractor(BaseExtractor):
         fname : str
             Functional dtseries.nii file
         roi_file : str
-            dlabel.nii file that identifies regions of interests. Can be an 
+            dlabel.nii file that identifies regions of interests. Can be an
             atlas/parcellation with multiple regions, or a binary mask
         as_vertices : bool, optional
-            Extract the individual vertex timeseries from a region. Only 
-            possible when roi_file is a binary mask (single region), by 
+            Extract the individual vertex timeseries from a region. Only
+            possible when roi_file is a binary mask (single region), by
             default False
         pre_clean : bool, optional
-            Denoise data (e.g., filtering, confound regression) before 
-            timeseries extraction. Otherwise, denoising is done on the 
+            Denoise data (e.g., filtering, confound regression) before
+            timeseries extraction. Otherwise, denoising is done on the
             extracted timeseries, which is consistent with nilearn and is more
             computationally efficient. By default False
         verbose : bool, optional
             Print out extraction timestamp, by default False
         **kwargs
-            Arguments to pass to nilearn.signal.clean other than 
+            Arguments to pass to nilearn.signal.clean other than
             confounds_regressors
         """
-        
+
         self.fname = fname
         self.dtseries = _read_dtseries(fname)
         self.roi_file = roi_file
-        self.dlabel, self.labels = _read_dlabel(roi_file)     
+        self.dlabel, self.labels = _read_dlabel(roi_file)
         self.as_vertices = as_vertices
         self.pre_clean = pre_clean
         self.verbose = verbose
         self._clean_kwargs = kwargs
 
-        self.dlabel_array, self.darray = _load_and_align_ciftis(self.dlabel, 
+        self.dlabel_array, self.darray = _load_and_align_ciftis(self.dlabel,
                                                                 self.dtseries)
         self.regressor_names = None
         self.regressor_array = None
-        
+
     def discard_scans(self, n_scans):
-        """Discard first N scans from data and regressors, if available 
+        """Discard first N scans from data and regressors, if available
 
         Parameters
         ----------
@@ -196,14 +196,14 @@ class CiftiExtractor(BaseExtractor):
 
         if self.regressor_array is not None:
             self.regressor_array = self.regressor_array[n_scans:, :]
-    
+
     def extract(self):
         """Extract timeseries"""
         self.show_extract_msg(self.fname)
-        tseries = mask_data(self.darray, self.dlabel_array, 
-                            self.regressor_array, self.as_vertices, 
+        tseries = mask_data(self.darray, self.dlabel_array,
+                            self.regressor_array, self.as_vertices,
                             self.pre_clean, **self._clean_kwargs)
-        self.timeseries = label_timeseries(tseries, self.labels, 
+        self.timeseries = label_timeseries(tseries, self.labels,
                                            self.as_vertices)
         # remove extracted background signal if any
         if '???' in self.timeseries.columns:

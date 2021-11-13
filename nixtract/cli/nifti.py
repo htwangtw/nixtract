@@ -9,7 +9,7 @@ from nilearn.datasets import (fetch_atlas_destrieux_2009, fetch_atlas_yeo_2011,
                               fetch_atlas_talairach, fetch_atlas_schaefer_2018)
 
 from nixtract.cli.base import (base_cli, handle_base_args, replace_file_ext,
-                               make_param_file, check_glob, empty_to_none, 
+                               make_param_file, check_glob, empty_to_none,
                                run_extraction)
 from nixtract.extractors import NiftiExtractor
 
@@ -24,7 +24,7 @@ def _cli_parser():
                              'to specify all files matching the file pattern. '
                              'If so, these files are naturally sorted by file '
                              'name prior to extraction')
-    parser.add_argument('--roi_file', type=str, 
+    parser.add_argument('--roi_file', type=str,
                         help='Parameter that defines the region(s) of interest. '
                              'This can be 1) a file path to NIFTI image that is '
                              'an atlas of multiple regions, a probabilistic atlas, '
@@ -41,7 +41,7 @@ def _cli_parser():
                              'of coordinates. This will restrict extraction to '
                              'only voxels within the mask. If `roi_file` is a '
                              'single region binary mask, this will be ignored')
-    parser.add_argument('--labels', nargs='+', type=str, 
+    parser.add_argument('--labels', nargs='+', type=str,
                         help='Labels corresponding to the region numbers in '
                              '`roi_file`. Can either be a) a list of strings, b) '
                              'or a .tsv file that contains a `Labels` column. '
@@ -55,7 +55,7 @@ def _cli_parser():
                              'a region rather than the mean timeseries. This is '
                              'only available for single region (binary) masks. '
                              'Default: False')
-    parser.add_argument('--radius', type=float, metavar='radius', 
+    parser.add_argument('--radius', type=float, metavar='radius',
                         help='Set the radius of the spheres (in mm) centered on '
                              'the coordinates provided in `roi_file`. Only applicable '
                              'when a coordinate .tsv file is passed to `roi_file`; '
@@ -173,7 +173,7 @@ def _check_nifti_params(params):
 
     if not params['roi_file']:
         raise ValueError('Missing roi_file input.')
-    
+
     if params['roi_file'].startswith('nilearn:'):
         cache = os.path.join(params['output_dir'], 'nixtract_data')
         os.makedirs(cache, exist_ok=True)
@@ -202,7 +202,7 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
         File path of the functional nifti file
     roi_file : str
         File path of the roi file, where each region is labelled based on the
-        numeric values in the file 
+        numeric values in the file
     regressor_file : str
         File path of regressor file
     params : dict
@@ -210,27 +210,27 @@ def extract_nifti(input_file, roi_file, regressor_file, params):
     """
     extractor = NiftiExtractor(
         fname=input_file,
-        roi_file=roi_file, 
+        roi_file=roi_file,
         labels=params['labels'],
         as_voxels=params['as_voxels'],
-        mask_img=params['mask_img'], 
-        radius=params['radius'], 
+        mask_img=params['mask_img'],
+        radius=params['radius'],
         allow_overlap=params['allow_overlap'],
-        verbose=params['verbose'], 
-        standardize=params['standardize'], 
-        t_r=params['t_r'], 
-        high_pass=params['high_pass'], 
-        low_pass=params['low_pass'], 
+        verbose=params['verbose'],
+        standardize=params['standardize'],
+        t_r=params['t_r'],
+        high_pass=params['high_pass'],
+        low_pass=params['low_pass'],
         detrend=params['detrend'],
         smoothing_fwhm=params['smoothing_fwhm']
     )
     if regressor_file is not None:
-        extractor.set_regressors(regressor_file, params['regressors'], 
+        extractor.set_regressors(regressor_file, params['regressors'],
                                  params["load_confounds_kwargs"])
 
     if (params['discard_scans'] is not None) and (params['discard_scans'] > 0):
         extractor.discard_scans(params['discard_scans'])
-    
+
     extractor.extract()
     out = os.path.join(params['out_dir'], replace_file_ext(input_file))
     extractor.save(out, params['n_decimals'])
@@ -244,7 +244,7 @@ def main():
     shutil.copy2(params['roi_file'], metadata_path)
 
     # setup and run extraction
-    run_extraction(extract_nifti, params['input_files'], params['roi_file'], 
+    run_extraction(extract_nifti, params['input_files'], params['roi_file'],
                    params)
 
 if __name__ == '__main__':

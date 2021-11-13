@@ -8,7 +8,7 @@ import load_confounds
 
 def _load_from_strategy(denoiser, fname):
     """Verifies if load_confounds strategy is useable given the regressor files.
-    load_confounds will raise it's own exception, but add an additional 
+    load_confounds will raise it's own exception, but add an additional
     nixtract-specific exception that clarifies the incompatibility.
 
     Parameters
@@ -44,7 +44,7 @@ def _load_predefined_strategy(regressors, regressor_file, kwargs=None):
         cmd = 'load_confounds.{}(**kwargs)'.format(regressors)
     else:
         cmd = 'load_confounds.{}()'.format(regressors)
-    
+
     denoiser = eval(cmd)
     return _load_from_strategy(denoiser, regressor_file)
 
@@ -72,15 +72,15 @@ def _load_regressor_names(regressors, regressor_file):
 
 class BaseExtractor(object):
 
-    def set_regressors(self, regressor_file, regressors=None, 
+    def set_regressors(self, regressor_file, regressors=None,
                        load_confounds_kwargs=None):
         """Set regressors to be used with extraction
 
-        NaN imputation is done by default because nilearn.signal.clean will 
-        crash if NaNs are present. Any initial NaNs (derivatives, 
-        framewise_displacement, etc) are replaced with the value in subsequent 
-        row, which is the load_confound approach. If initial scans are to be 
-        discarded then this is a non-issue. 
+        NaN imputation is done by default because nilearn.signal.clean will
+        crash if NaNs are present. Any initial NaNs (derivatives,
+        framewise_displacement, etc) are replaced with the value in subsequent
+        row, which is the load_confound approach. If initial scans are to be
+        discarded then this is a non-issue.
 
         Parameters
         ----------
@@ -88,7 +88,7 @@ class BaseExtractor(object):
             Regressor file where each column is a separate regressor. The
             first row must be column headers, i.e. regressor names
         regressors : list or str, optional
-            List of regressor names, or a load_confounds regressor strategy. 
+            List of regressor names, or a load_confounds regressor strategy.
             Must be compatible with regressor_file. By default None
 
         Raises
@@ -99,9 +99,9 @@ class BaseExtractor(object):
             Regressors is not a list or a str
         """
         # strategy options in load confounds
-        strategies = ['Params2', 'Params6', 'Params9', 'Params24', 'Params36', 
-                      'AnatCompCor', 'TempCompCor'] 
-        flexible_strategies = ['motion', 'high_pass', 'wm_csf', 'compcor', 
+        strategies = ['Params2', 'Params6', 'Params9', 'Params24', 'Params36',
+                      'AnatCompCor', 'TempCompCor']
+        flexible_strategies = ['motion', 'high_pass', 'wm_csf', 'compcor',
                                'global']
 
         if isinstance(regressors, str):
@@ -113,23 +113,23 @@ class BaseExtractor(object):
             names = regs.columns
             regs = regs.values
             self._load_confounds = False
-        
+
         elif len(regressors) == 1 and (regressors[0] in strategies):
-            regs, names = _load_predefined_strategy(regressors[0], 
-                                                    regressor_file, 
+            regs, names = _load_predefined_strategy(regressors[0],
+                                                    regressor_file,
                                                     load_confounds_kwargs)
             self._load_confounds = True
 
         elif set(regressors) <= set(flexible_strategies):
-            regs, names = _load_flexible_strategy(regressors, regressor_file, 
+            regs, names = _load_flexible_strategy(regressors, regressor_file,
                                                   load_confounds_kwargs)
             self._load_confounds = True
 
-        elif all([x not in strategies + flexible_strategies 
+        elif all([x not in strategies + flexible_strategies
                   for x in regressors]):
             regs, names = _load_regressor_names(regressors, regressor_file)
             self._load_confounds = False
-        
+
         else:
             raise ValueError('Invalid regressors. Regressors must be a list '
                              'of column names that appear in regressor_files, '
@@ -150,7 +150,7 @@ class BaseExtractor(object):
         Raises
         ------
         ValueError
-            Object has no timeseries attribute yet  
+            Object has no timeseries attribute yet
         """
         if not hasattr(self, 'timeseries'):
             raise ValueError('timeseries data does not yet exist. Must call '
@@ -166,7 +166,7 @@ class BaseExtractor(object):
         """
         self.check_extracted()
         float_format = f'%.{n_decimals}f' if n_decimals else None
-        self.timeseries.to_csv(out, sep='\t', index=False, 
+        self.timeseries.to_csv(out, sep='\t', index=False,
                                float_format=float_format)
 
     def show_extract_msg(self, fname):
